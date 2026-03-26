@@ -1,0 +1,213 @@
+name: Update Golf Pool Scores
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes — change to */5 for every 5 minutes
+  workflow_dispatch:          # Also allows manual trigger from GitHub Actions tab
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch ESPN scores and update Gist
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ secrets.POOL_GIST_TOKEN }}
+          GIST_ID: ${{ secrets.POOL_GIST_ID }}
+        run: |
+          python3 << 'PYEOF'
+          import urllib.request, json, os
+          from datetime import datetime, timezone
+
+          token = os.environ['GITHUB_TOKEN']
+          gist_id = os.environ['GIST_ID']
+
+          # ── Early exit if not during tournament hours ─────────────────────
+          # PGA Tour rounds typically run Thursday-Sunday, ~7am-9pm ET
+          # ET = UTC-4 (EDT) or UTC-5 (EST) — use UTC-4 for safety during golf season
+          now_utc = datetime.now(timezone.utc)
+          hour_et = (now_utc.hour - 4) % 24
+          day_of_week = now_utc.weekday()  # 0=Mon, 3=Thu, 6=Sun
+          is_tournament_day = day_of_week >= 3  # Thursday(3) through Sunday(6)
+          is_playing_hours = 7 <= hour_et <= 21  # 7am - 9pm ET
+
+          if not (is_tournament_day and is_playing_hours):
+              print(f'Outside tournament hours (ET hour: {hour_et}, day: {day_of_week}) — skipping')
+              exit(0)
+
+          print(f'Running update at ET hour {hour_et}, day {day_of_week}')
+
+          headers = {
+              'Authorization': f'token {token}',
+              'User-Agent': 'GolfPool',
+              'Content-Type': 'application/json'
+          }
+
+          # ── 1. Read current Gist ──────────────────────────────────────────
+          req = urllib.request.Request(
+              f'https://api.github.com/gists/{gist_id}',
+              headers=headers
+          )
+          with urllib.request.urlopen(req) as r:
+              gist_data = json.loads(r.read())
+
+          content = gist_data['files']['pool.json']['content']
+          pool = json.loads(content)
+          espn_id = pool.get('espnEventId') or pool.get('tid', '')
+
+          # Map tournament ID to ESPN event ID
+          schedule = {
+              'houston-2026': '401811939',
+              'valero-2026':  '401703511',
+              'masters-2026': '401703512',
+              'rbc-2026':     '401703513',
+              'zurich-2026':  '401703514',
+              'cadillac-2026':'401703515',
+              'truist-2026':  '401703516',
+              'myrtle-2026':  '401703517',
+              'pga-champ-2026':'401703518',
+              'charles-2026': '401703519',
+              'memorial-2026':'401703520',
+              'usopen-2026':  '401703521',
+              'travelers-2026':'401703522',
+              'genesis-scot-26':'401703523',
+              'open-2026':    '401703524',
+              '3m-2026':      '401703525',
+              'fedex-st-2026':'401703526',
+              'bmw-2026':     '401703527',
+              'tour-champ-2026':'401703528',
+          }
+          tid = pool.get('tid', '')
+          espn_event_id = schedule.get(tid, '')
+          if not espn_event_id:
+              print(f'No ESPN ID for tournament: {tid} — skipping')
+              exit(0)
+
+          # Skip if tournament already complete
+          meta = pool.get('meta') or {}
+          if meta.get('isComplete'):
+              print(f'Tournament {tid} already complete — skipping')
+              exit(0)
+
+          print(f'Fetching ESPN scores for {tid} (event {espn_event_id})')
+
+          # ── 2. Fetch ESPN scoreboard ──────────────────────────────────────
+          url = f'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard?event={espn_event_id}'
+          req = urllib.request.Request(url, headers={'User-Agent': 'GolfPool'})
+          try:
+              with urllib.request.urlopen(req, timeout=15) as r:
+                  espn = json.loads(r.read())
+          except Exception as e:
+              print(f'ESPN fetch failed: {e} — skipping update')
+              exit(0)
+
+          event = espn.get('events', [{}])[0]
+          comp = (event.get('competitions') or [{}])[0]
+          competitors = comp.get('competitors', [])
+          is_complete = bool((comp.get('status') or {}).get('type', {}).get('completed'))
+          round_num = (comp.get('status') or {}).get('period')
+          round_label = 'Final' if is_complete else (f'R{round_num}' if round_num else 'Pre-tournament')
+
+          # ── 3. Parse scores ───────────────────────────────────────────────
+          def parse_score(v):
+              if v in (None, '--', '', 'E'): return 0 if v == 'E' else None
+              try: return int(v)
+              except: return None
+
+          # Sort by order for position
+          sorted_comps = sorted(competitors, key=lambda c: c.get('order', 999))
+          pos_map = {}
+          last_score = None
+          last_rank = 0
+          for i, c in enumerate(sorted_comps):
+              s = parse_score(c.get('score'))
+              if s == last_score:
+                  pos_map[c['id']] = f'T{last_rank}'
+              else:
+                  last_rank = i + 1
+                  last_score = s
+                  pos_map[c['id']] = str(last_rank)
+              # Fix first of tied group
+          last_score = None
+          tie_start = 0
+          for i, c in enumerate(sorted_comps):
+              s = parse_score(c.get('score'))
+              if s != last_score:
+                  last_score = s
+                  tie_start = i
+              elif i > tie_start:
+                  pos_map[sorted_comps[tie_start]['id']] = f'T{tie_start + 1}'
+
+          scores = {}
+          for c in competitors:
+              athlete = c.get('athlete', {})
+              name = athlete.get('displayName') or athlete.get('fullName', '')
+              if not name:
+                  continue
+              score = parse_score(c.get('score'))
+              ls = c.get('linescores', [])
+              active_rounds = [r for r in ls if r.get('displayValue') not in (None, '')]
+              # Cumulative round scores → individual
+              cum = [parse_score(r['displayValue']) for r in active_rounds]
+              round_scores = []
+              for i, v in enumerate(cum):
+                  if v is None: round_scores.append(None)
+                  elif i == 0: round_scores.append(v)
+                  else:
+                      prev = cum[i-1]
+                      round_scores.append(None if prev is None else v - prev)
+
+              # Thru
+              cur_round = active_rounds[-1] if active_rounds else None
+              thru = ''
+              if cur_round:
+                  holes = cur_round.get('linescores', [])
+                  if holes:
+                      thru = 'F' if len(holes) >= 18 else str(len(holes))
+                  else:
+                      thru = 'F'
+
+              # Today
+              today = round_scores[-1] if round_scores else None
+
+              # Status
+              st = (c.get('status') or '').lower()
+              if 'cut' in st or c.get('didNotFinish'): status = 'cut'
+              elif 'wd' in st or 'withdrew' in st: status = 'wd'
+              elif 'dq' in st: status = 'dq'
+              elif is_complete: status = 'complete'
+              else: status = 'active'
+
+              scores[name] = {
+                  'score': score,
+                  'status': status,
+                  'position': pos_map.get(c['id'], ''),
+                  'thru': thru,
+                  'today': today,
+                  'roundScores': round_scores
+              }
+
+          print(f'Parsed {len(scores)} players, round: {round_label}, complete: {is_complete}')
+
+          # ── 4. Update pool data ───────────────────────────────────────────
+          pool['scores'] = scores
+          pool['meta'] = {
+              'round': round_label,
+              'roundNum': round_num,
+              'isComplete': is_complete,
+              'tournament': event.get('name', ''),
+              'lastRefresh': 'auto'
+          }
+
+          # ── 5. Save back to Gist ──────────────────────────────────────────
+          update_body = json.dumps({'files': {'pool.json': {'content': json.dumps(pool)}}}).encode()
+          req = urllib.request.Request(
+              f'https://api.github.com/gists/{gist_id}',
+              data=update_body,
+              headers=headers,
+              method='PATCH'
+          )
+          with urllib.request.urlopen(req) as r:
+              result = json.loads(r.read())
+          print(f'Gist updated: {result["updated_at"]}')
+          PYEOF
