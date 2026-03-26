@@ -609,10 +609,10 @@ body.light .ar-bar{background:#e8f5e8}
       <h3>⚡ Bulk Pick Entry</h3>
       <p>Add a participant quickly by pasting a tab-separated row (e.g. copied from Excel) or typing values separated by tabs. Press Enter or click Add.</p>
       <div class="bulk-row">
-        <input class="bulk-in" id="bulk-in" placeholder="Name [tab] TB score [tab] T1 pick [tab] T2 [tab] T3 [tab] T4 [tab] T5 [tab] T6">
+        <input class="bulk-in" id="bulk-in" placeholder="Name [tab] T1 pick [tab] T2 [tab] T3 [tab] T4 [tab] T5 [tab] T6 [tab] Tiebreaker">
         <button class="btn btn-sc btn-sm" onclick="addBulk()">Add</button>
       </div>
-      <div class="bulk-hint">Format: <b>Name</b> [tab] <b>Tiebreaker</b> [tab] <b>Tier 1 pick</b> [tab] ... [tab] <b>Tier 6 pick</b><br>Works with rows pasted directly from Excel or Google Sheets.</div>
+      <div class="bulk-hint">Format: <b>Name</b> [tab] <b>T1 pick</b> [tab] <b>T2</b> [tab] <b>T3</b> [tab] <b>T4</b> [tab] <b>T5</b> [tab] <b>T6 pick</b> [tab] <b>Tiebreaker</b><br>Works with rows pasted directly from Excel or Google Sheets.</div>
       <div class="bulk-st" id="bulk-st"></div>
     </div>
 
@@ -954,6 +954,8 @@ async function doRefresh(){
     renderLb();
     updateStatusBar();
     updateTournBanner();
+    // Check tier players against ESPN field and update tier warning
+    checkTierFieldValidation(null,null);
   }catch(e){
     showErr('ESPN API failed: '+e.message+'. Use Manual entry as fallback.');
     document.getElementById('man-pan').classList.add('on');
@@ -1223,10 +1225,18 @@ function copyTierList(){
     lines.push('');
   });
   lines.push('Pick one player from each tier. Tier 6 Wild Card = any player not listed above.');
-  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
-    const btn=document.querySelector('#panel-setup .btn-pr');
-    if(btn){const t=btn.textContent;btn.textContent='\u2713 Copied!';setTimeout(()=>btn.textContent=t,2000);}
-  }).catch(()=>alert('Could not copy \u2014 please copy manually.'));
+  const txt2=lines.join('\n');
+  const btn2=document.querySelector('#panel-setup .btn-pr');
+  const doFlash2=()=>{if(btn2){const t=btn2.textContent;btn2.textContent='\u2713 Copied!';setTimeout(()=>btn2.textContent=t,2000);}};
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(txt2).then(doFlash2).catch(()=>{
+      const ta=document.createElement('textarea');ta.value=txt2;
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);doFlash2();
+    });
+  }else{
+    const ta=document.createElement('textarea');ta.value=txt2;
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);doFlash2();
+  }
 }
 
 function renderTierSetup(){
@@ -1340,10 +1350,11 @@ function addBulk(){
   const cols=raw.split('\t');
   const name=(cols[0]||'').trim();
   if(!name){if(st){st.textContent='Name is required as the first column.';st.className='bulk-st err';}return;}
-  const tbRaw=(cols[1]||'').trim().replace(/[^0-9\-+]/g,'');
-  const tiebreaker=tbRaw!==''&&!isNaN(Number(tbRaw))?tbRaw:'';
+  // Format: Name [tab] T1 [tab] T2 [tab] T3 [tab] T4 [tab] T5 [tab] T6 [tab] Tiebreaker
   const picks=[];
-  for(let i=0;i<PICKS;i++)picks.push((cols[2+i]||'').trim());
+  for(let i=0;i<PICKS;i++)picks.push((cols[1+i]||'').trim());
+  const tbRaw=(cols[1+PICKS]||'').trim().replace(/[^0-9\-+]/g,'');
+  const tiebreaker=tbRaw!==''&&!isNaN(Number(tbRaw))?tbRaw:'';
   const existing=state.participants.find(p=>p.name.trim().toLowerCase()===name.toLowerCase());
   if(existing){
     existing.tiebreaker=tiebreaker;
@@ -1357,6 +1368,126 @@ function addBulk(){
   shareUrl=null;save();
   renderParticipants();
   if(st)setTimeout(()=>{st.textContent='';},3000);
+}
+
+// \u2500\u2500 PICKS SUMMARY \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+let psView='table';
+function setPsView(v){
+  psView=v;
+  document.getElementById('ps-tab-tbl').classList.toggle('on',v==='table');
+  document.getElementById('ps-tab-card').classList.toggle('on',v==='card');
+  renderPicksSummary();
+}
+function renderPicksSummary(){
+  const el=document.getElementById('ps-container');
+  if(!el)return;
+  const parts=state.participants.filter(p=>p.name.trim());
+  if(!parts.length){el.innerHTML='<div style="font-size:13px;color:var(--mu)">No participants yet.</div>';return;}
+  if(psView==='table'){
+    let html='<div class="ps-tbl-wrap"><table class="ps-tbl"><thead><tr><th>Participant</th><th>TB</th>';
+    for(let i=0;i<PICKS;i++)html+='<th class="tier-hd" style="border-top:3px solid '+TC[i]+'">T'+(i+1)+(i===PICKS-1?' / WC':'')+'</th>';
+    html+='</tr></thead><tbody>';
+    parts.forEach(p=>{
+      html+='<tr><td class="name-cell">'+escH(p.name)+'</td>';
+      html+='<td class="tb-cell">'+(p.tiebreaker?fmtS(Number(p.tiebreaker)):'-')+'</td>';
+      p.picks.forEach((pk,ti)=>{
+        html+='<td class="tier-cell">'+escH(pk.trim()||'-')+'</td>';
+      });
+      html+='</tr>';
+    });
+    html+='</tbody></table></div>';
+    el.innerHTML=html;
+  }else{
+    let html='<div class="ps-cards">';
+    parts.forEach(p=>{
+      html+='<div class="ps-card">'+
+        '<div class="ps-card-name">'+escH(p.name)+'</div>'+
+        '<div class="ps-card-tb">'+(p.tiebreaker?'Tiebreaker: '+fmtS(Number(p.tiebreaker)):'No tiebreaker')+'</div>';
+      p.picks.forEach((pk,ti)=>{
+        const nm=pk.trim();
+        html+='<div class="ps-pick">'+
+          '<span class="ps-pick-t" style="background:'+TC[ti]+'22;color:'+TC[ti]+'">T'+(ti+1)+'</span>'+
+          '<span class="ps-pick-nm">'+escH(nm||'\u2014')+'</span>'+
+        '</div>';
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+    el.innerHTML=html;
+  }
+}
+
+// \u2500\u2500 PICKS VALIDATION \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function validatePicks(){
+  const ban=document.getElementById('val-banner');
+  const det=document.getElementById('val-details');
+  if(!ban||!det)return;
+  if(!hasTiers()){ban.style.display='none';return;}
+  const issues=[];
+  state.participants.filter(p=>p.name.trim()).forEach(p=>{
+    p.picks.forEach((pk,ti)=>{
+      const nm=pk.trim();
+      if(!nm)return;
+      if(nm==='Wild Card'&&ti===PICKS-1)return;
+      const tierPlayers=getTierPlayers(ti).map(n=>n.toLowerCase());
+      if(!tierPlayers.includes(nm.toLowerCase())){
+        issues.push(escH(p.name)+': <b>'+escH(nm)+'</b> not in Tier '+(ti+1));
+      }
+    });
+  });
+  if(issues.length){det.innerHTML=issues.join('<br>');ban.style.display='block';}
+  else{ban.style.display='none';}
+}
+
+// \u2500\u2500 COPY GOOGLE FORM LISTS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function renderCopyFormLists(){
+  const grid=document.getElementById('cf-grid');
+  const hint=document.getElementById('cf-hint');
+  if(!grid)return;
+  if(!hasTiers()){
+    grid.innerHTML='';
+    if(hint)hint.textContent='Fill in the Player Tiers section above to enable these buttons.';
+    return;
+  }
+  if(hint)hint.textContent='Click a tier button to copy that tier\'s player names \u2014 paste directly into a Google Form dropdown question.';
+  grid.innerHTML='';
+  state.tiers.forEach((t,ti)=>{
+    const isLast=ti===PICKS-1;
+    const players=t.filter(p=>p.name.trim()).map(p=>p.name.trim());
+    const col=TC[ti]||'#5a6a7e';
+    const btn=document.createElement('button');
+    btn.className='cf-btn';
+    btn.style.borderColor=col+'44';
+    btn.innerHTML='<div class="cf-tier-num" style="color:'+col+'">T'+(ti+1)+'</div>'+
+      '<div class="cf-tier-lbl">'+players.length+(isLast?' players + WC':' players')+'</div>';
+    btn.onclick=()=>{
+      const list=[...players];
+      if(isLast)list.push('Wild Card');
+      const txt=list.join('\n');
+      const doFlash=()=>{
+        btn.classList.add('copied');
+        btn.querySelector('.cf-tier-lbl').textContent='Copied!';
+        btn.style.borderColor=col;
+        setTimeout(()=>{
+          btn.classList.remove('copied');
+          btn.querySelector('.cf-tier-lbl').textContent=players.length+(isLast?' players + WC':' players');
+          btn.style.borderColor=col+'44';
+        },2000);
+      };
+      if(navigator.clipboard&&window.isSecureContext){
+        navigator.clipboard.writeText(txt).then(doFlash).catch(()=>{
+          const ta=document.createElement('textarea');ta.value=txt;
+          document.body.appendChild(ta);ta.select();
+          document.execCommand('copy');document.body.removeChild(ta);doFlash();
+        });
+      }else{
+        const ta=document.createElement('textarea');ta.value=txt;
+        document.body.appendChild(ta);ta.select();
+        document.execCommand('copy');document.body.removeChild(ta);doFlash();
+      }
+    };
+    grid.appendChild(btn);
+  });
 }
 
 // \u2500\u2500 PARTICIPANTS SETUP \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
