@@ -961,7 +961,9 @@ async function doRefresh(){
     state.scores=matched;
     state.meta={tournament:result.tournament,round:result.round,roundNum:result.roundNum,isComplete:result.isComplete,projCut:result.projCut};
     state.scoreSource='espn';
-    state.lastRefresh=new Date().toLocaleTimeString();
+    const now=new Date();
+    const h=now.getHours(),m=now.getMinutes(),ampm=h>=12?'PM':'AM';
+    state.lastRefresh=(h%12||12)+':'+(m<10?'0':'')+m+' '+ampm;
     if(result.isComplete&&result.actualWinningScore!=null)state.aws=String(result.actualWinningScore);
     // Pool history \u2014 store individual round scores (not cumulative)
     // Strategy: store cumulative under nowR, then on display diff consecutive rounds
