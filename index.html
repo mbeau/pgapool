@@ -1355,16 +1355,16 @@ function renderPicksSummaryInTiers(container){
     return;
   }
   let html='<div class="tps-hdr">Pool Picks</div>';
-  // Use the same table/card logic but always show both \u2014 default table on desktop, cards on mobile
-  // Table view
   html+='<div class="ps-tbl-wrap"><table class="ps-tbl"><thead><tr><th>Participant</th>';
   for(let i=0;i<PICKS;i++)html+='<th class="tier-hd" style="border-top:3px solid '+TC[i]+'">T'+(i+1)+(i===PICKS-1?' / WC':'')+'</th>';
+  html+='<th class="tier-hd" style="border-top:3px solid var(--a2)">TB</th>';
   html+='</tr></thead><tbody>';
   parts.forEach(p=>{
     html+='<tr><td class="name-cell">'+escH(p.name)+'</td>';
     p.picks.forEach((pk)=>{
       html+='<td class="tier-cell">'+escH(pk.trim()||'\u2014')+'</td>';
     });
+    html+='<td class="tb-cell">'+(p.tiebreaker!==''&&p.tiebreaker!==undefined?fmtS(Number(p.tiebreaker)):'-')+'</td>';
     html+='</tr>';
   });
   html+='</tbody></table></div>';
@@ -1425,10 +1425,12 @@ function renderTierView(){
     const players=t.filter(p=>p.name.trim());
     let rowsHtml='';
     players.forEach((p,pi)=>{
-      rowsHtml+=`<div class="tier-view-row">
-        <span class="tier-view-n">${ti*TIER_SIZE+pi+1}</span>
-        <span class="tier-view-name">${escH(p.name.trim())}</span>
-      </div>`;
+      const oddsHtml=showOdds&&p.odds&&p.odds.trim()?'<span class="tier-view-odds">'+escH(p.odds.trim())+'</span>':'';
+      rowsHtml+='<div class="tier-view-row">'+
+        '<span class="tier-view-n">'+(ti*TIER_SIZE+pi+1)+'</span>'+
+        '<span class="tier-view-name">'+escH(p.name.trim())+'</span>'+
+        oddsHtml+
+      '</div>';
     });
     if(!players.length)rowsHtml='<div style="padding:8px 14px;font-size:12px;color:var(--mu)">Not filled in yet</div>';
     const wcHtml=isLast?`<div class="tier-view-wc"><span class="tier-view-wc-lbl">\uD83C\uDCCF Wild Card</span><span class="tier-view-wc-note">Any player in field</span></div>`:'';
