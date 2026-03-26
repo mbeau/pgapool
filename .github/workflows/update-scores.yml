@@ -16,20 +16,18 @@ jobs:
           GIST_ID: ${{ secrets.POOL_GIST_ID }}
         run: |
           python3 << 'PYEOF'
-          import urllib.request, json, os
+          import urllib.request, json, os, re
           from datetime import datetime, timezone
 
           token = os.environ['GITHUB_TOKEN']
           gist_id = os.environ['GIST_ID']
 
           # ── Early exit if not during tournament hours ─────────────────────
-          # PGA Tour rounds typically run Thursday-Sunday, ~7am-9pm ET
-          # ET = UTC-4 (EDT) or UTC-5 (EST) — use UTC-4 for safety during golf season
           now_utc = datetime.now(timezone.utc)
           hour_et = (now_utc.hour - 4) % 24
           day_of_week = now_utc.weekday()  # 0=Mon, 3=Thu, 6=Sun
-          is_tournament_day = day_of_week >= 3  # Thursday(3) through Sunday(6)
-          is_playing_hours = 7 <= hour_et <= 21  # 7am - 9pm ET
+          is_tournament_day = day_of_week >= 3  # Thursday through Sunday
+          is_playing_hours = 7 <= hour_et <= 21  # 7am-9pm ET
 
           if not (is_tournament_day and is_playing_hours):
               print(f'Outside tournament hours (ET hour: {hour_et}, day: {day_of_week}) — skipping')
@@ -53,28 +51,27 @@ jobs:
 
           content = gist_data['files']['pool.json']['content']
           pool = json.loads(content)
-          espn_id = pool.get('espnEventId') or pool.get('tid', '')
 
           # Map tournament ID to ESPN event ID
           schedule = {
-              'houston-2026': '401811939',
-              'valero-2026':  '401703511',
-              'masters-2026': '401703512',
-              'rbc-2026':     '401703513',
-              'zurich-2026':  '401703514',
-              'cadillac-2026':'401703515',
-              'truist-2026':  '401703516',
-              'myrtle-2026':  '401703517',
-              'pga-champ-2026':'401703518',
-              'charles-2026': '401703519',
-              'memorial-2026':'401703520',
-              'usopen-2026':  '401703521',
-              'travelers-2026':'401703522',
+              'houston-2026':   '401811939',
+              'valero-2026':    '401703511',
+              'masters-2026':   '401703512',
+              'rbc-2026':       '401703513',
+              'zurich-2026':    '401703514',
+              'cadillac-2026':  '401703515',
+              'truist-2026':    '401703516',
+              'myrtle-2026':    '401703517',
+              'pga-champ-2026': '401703518',
+              'charles-2026':   '401703519',
+              'memorial-2026':  '401703520',
+              'usopen-2026':    '401703521',
+              'travelers-2026': '401703522',
               'genesis-scot-26':'401703523',
-              'open-2026':    '401703524',
-              '3m-2026':      '401703525',
-              'fedex-st-2026':'401703526',
-              'bmw-2026':     '401703527',
+              'open-2026':      '401703524',
+              '3m-2026':        '401703525',
+              'fedex-st-2026':  '401703526',
+              'bmw-2026':       '401703527',
               'tour-champ-2026':'401703528',
           }
           tid = pool.get('tid', '')
@@ -108,37 +105,70 @@ jobs:
           round_num = (comp.get('status') or {}).get('period')
           round_label = 'Final' if is_complete else (f'R{round_num}' if round_num else 'Pre-tournament')
 
-          # ── 3. Parse scores ───────────────────────────────────────────────
+          # ── 3. Fuzzy name matching helper ─────────────────────────────────
+          def norm(s):
+              # Remove accents and special chars, lowercase
+              s = s.lower()
+              s = re.sub(r'[^a-z\s]', '', s).strip()
+              return s
+
+          def name_sim(a, b):
+              wa = norm(a).split()
+              wb = norm(b).split()
+              if not wa or not wb:
+                  return 0
+              shared = len([w for w in wa if w in wb])
+              return shared / max(len(wa), len(wb))
+
+          # Build ESPN name index for fuzzy matching
+          espn_names = {}  # norm_name -> original name
+          for c in competitors:
+              athlete = c.get('athlete', {})
+              name = athlete.get('displayName') or athlete.get('fullName', '')
+              if name:
+                  espn_names[norm(name)] = name
+
+          def find_espn_name(pick_name):
+              """Find best matching ESPN name for a pick name using fuzzy match."""
+              n = norm(pick_name)
+              # Exact match first
+              if n in espn_names:
+                  return espn_names[n]
+              # Fuzzy match
+              best, best_score = None, 0
+              for en, orig in espn_names.items():
+                  score = name_sim(pick_name, orig)
+                  if score > best_score:
+                      best_score = score
+                      best = orig
+              return best if best_score >= 0.5 else None
+
+          # ── 4. Parse scores ───────────────────────────────────────────────
           def parse_score(v):
-              if v in (None, '--', '', 'E'): return 0 if v == 'E' else None
-              try: return int(v)
-              except: return None
+              if v in (None, '--', '', 'E'):
+                  return 0 if v == 'E' else None
+              try:
+                  return int(v)
+              except:
+                  return None
 
           # Sort by order for position
           sorted_comps = sorted(competitors, key=lambda c: c.get('order', 999))
           pos_map = {}
-          last_score = None
-          last_rank = 0
-          for i, c in enumerate(sorted_comps):
-              s = parse_score(c.get('score'))
-              if s == last_score:
-                  pos_map[c['id']] = f'T{last_rank}'
-              else:
-                  last_rank = i + 1
-                  last_score = s
-                  pos_map[c['id']] = str(last_rank)
-              # Fix first of tied group
-          last_score = None
-          tie_start = 0
+          last_score, last_rank, tie_start = None, 0, 0
           for i, c in enumerate(sorted_comps):
               s = parse_score(c.get('score'))
               if s != last_score:
                   last_score = s
+                  last_rank = i + 1
                   tie_start = i
-              elif i > tie_start:
-                  pos_map[sorted_comps[tie_start]['id']] = f'T{tie_start + 1}'
+                  pos_map[c['id']] = str(last_rank)
+              else:
+                  pos_map[c['id']] = f'T{last_rank}'
+                  pos_map[sorted_comps[tie_start]['id']] = f'T{last_rank}'
 
-          scores = {}
+          # Build scores keyed by ESPN display name
+          all_scores = {}
           for c in competitors:
               athlete = c.get('athlete', {})
               name = athlete.get('displayName') or athlete.get('fullName', '')
@@ -147,17 +177,17 @@ jobs:
               score = parse_score(c.get('score'))
               ls = c.get('linescores', [])
               active_rounds = [r for r in ls if r.get('displayValue') not in (None, '')]
-              # Cumulative round scores → individual
               cum = [parse_score(r['displayValue']) for r in active_rounds]
               round_scores = []
               for i, v in enumerate(cum):
-                  if v is None: round_scores.append(None)
-                  elif i == 0: round_scores.append(v)
+                  if v is None:
+                      round_scores.append(None)
+                  elif i == 0:
+                      round_scores.append(v)
                   else:
                       prev = cum[i-1]
                       round_scores.append(None if prev is None else v - prev)
 
-              # Thru
               cur_round = active_rounds[-1] if active_rounds else None
               thru = ''
               if cur_round:
@@ -167,18 +197,20 @@ jobs:
                   else:
                       thru = 'F'
 
-              # Today
               today = round_scores[-1] if round_scores else None
-
-              # Status
               st = (c.get('status') or '').lower()
-              if 'cut' in st or c.get('didNotFinish'): status = 'cut'
-              elif 'wd' in st or 'withdrew' in st: status = 'wd'
-              elif 'dq' in st: status = 'dq'
-              elif is_complete: status = 'complete'
-              else: status = 'active'
+              if 'cut' in st or c.get('didNotFinish'):
+                  status = 'cut'
+              elif 'wd' in st or 'withdrew' in st:
+                  status = 'wd'
+              elif 'dq' in st:
+                  status = 'dq'
+              elif is_complete:
+                  status = 'complete'
+              else:
+                  status = 'active'
 
-              scores[name] = {
+              all_scores[name] = {
                   'score': score,
                   'status': status,
                   'position': pos_map.get(c['id'], ''),
@@ -187,15 +219,41 @@ jobs:
                   'roundScores': round_scores
               }
 
-          print(f'Parsed {len(scores)} players, round: {round_label}, complete: {is_complete}')
+          # ── 5. Match pool picks using fuzzy matching ──────────────────────
+          # Get all unique pick names from participants
+          pick_names = set()
+          for p in pool.get('p', []):
+              for pk in p.get('pk', []):
+                  if pk and pk != 'Wild Card':
+                      pick_names.add(pk)
 
-          # ── 4. Update pool data ───────────────────────────────────────────
-          pool['scores'] = scores
-          # Write a human-readable ET timestamp for display in the app
-          hour_12 = hour_et % 12 or 12
+          # Build matched scores dict using fuzzy name matching
+          matched_scores = {}
+          not_found = []
+          for pick in pick_names:
+              espn_match = find_espn_name(pick)
+              if espn_match and espn_match in all_scores:
+                  matched_scores[pick] = all_scores[espn_match]
+              else:
+                  not_found.append(pick)
+                  matched_scores[pick] = {
+                      'score': None, 'status': 'unknown',
+                      'position': '', 'thru': '',
+                      'today': None, 'roundScores': []
+                  }
+
+          if not_found:
+              print(f'Players not matched: {not_found}')
+
+          print(f'Parsed {len(all_scores)} ESPN players, matched {len(pick_names)-len(not_found)}/{len(pick_names)} picks, round: {round_label}')
+
+          # ── 6. Build ET timestamp ─────────────────────────────────────────
+          h12 = hour_et % 12 or 12
           ampm = 'AM' if hour_et < 12 else 'PM'
-          minute = now_utc.minute
-          timestamp = f'{hour_12}:{minute:02d} {ampm} ET'
+          timestamp = f'{h12}:{now_utc.minute:02d} {ampm} ET'
+
+          # ── 7. Update pool data ───────────────────────────────────────────
+          pool['scores'] = matched_scores
           pool['meta'] = {
               'round': round_label,
               'roundNum': round_num,
@@ -204,7 +262,7 @@ jobs:
               'lastRefresh': timestamp
           }
 
-          # ── 5. Save back to Gist ──────────────────────────────────────────
+          # ── 8. Save back to Gist ──────────────────────────────────────────
           update_body = json.dumps({'files': {'pool.json': {'content': json.dumps(pool)}}}).encode()
           req = urllib.request.Request(
               f'https://api.github.com/gists/{gist_id}',
@@ -214,5 +272,5 @@ jobs:
           )
           with urllib.request.urlopen(req) as r:
               result = json.loads(r.read())
-          print(f'Gist updated: {result["updated_at"]}')
+          print(f'Gist updated at {timestamp}: {result["updated_at"]}')
           PYEOF
