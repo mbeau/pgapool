@@ -191,12 +191,17 @@ jobs:
 
           # ── 4. Update pool data ───────────────────────────────────────────
           pool['scores'] = scores
+          # Write a human-readable ET timestamp for display in the app
+          hour_12 = hour_et % 12 or 12
+          ampm = 'AM' if hour_et < 12 else 'PM'
+          minute = now_utc.minute
+          timestamp = f'{hour_12}:{minute:02d} {ampm} ET'
           pool['meta'] = {
               'round': round_label,
               'roundNum': round_num,
               'isComplete': is_complete,
               'tournament': event.get('name', ''),
-              'lastRefresh': 'auto'
+              'lastRefresh': timestamp
           }
 
           # ── 5. Save back to Gist ──────────────────────────────────────────
