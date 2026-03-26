@@ -142,6 +142,7 @@ body{background:var(--bg);color:var(--tx);font-family:'Barlow',sans-serif;min-he
 
 /* MANUAL ENTRY */
 .man-pan{background:var(--sf);border:1px solid var(--or);border-radius:12px;padding:20px;margin-bottom:20px;display:none}
+.man-hint{font-size:11px;color:var(--mu);margin-bottom:10px;padding:6px 10px;background:var(--sf2);border-radius:6px}
 .man-pan.on{display:block}
 .man-pan h3{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;text-transform:uppercase;color:var(--or);margin-bottom:4px}
 .man-pan p{font-size:12px;color:var(--mu);margin-bottom:16px;line-height:1.6}
@@ -290,6 +291,7 @@ body.light .ar-bar{background:#e8f5e8}
 .tier-view-info{font-size:12px;color:var(--mu)}
 .tier-view-info b{color:var(--tx);font-weight:500}
 .tier-empty{text-align:center;padding:48px 20px;color:var(--mu);font-size:14px}
+.tps-hdr{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--mu);margin-bottom:14px}
 
 
 /* POOL NAME EDIT */
@@ -475,8 +477,8 @@ body.light .ar-bar{background:#e8f5e8}
     </div>
   </div>
   <div class="man-pan" id="man-pan">
-    <h3>✏️ Manual Score Entry</h3>
-    <p>Enter scores from the PGA Tour app. Use E for even, -8 for 8 under, +3 for 3 over. Toggle CUT for missed cuts.</p>
+    <h3>&#x270F;&#xFE0F; Manual Score Entry</h3>
+    <p>Use when ESPN is unavailable. Only shows players picked by participants. Scores are cumulative to-par: E&nbsp;=&nbsp;even, -8&nbsp;=&nbsp;8 under, +3&nbsp;=&nbsp;3 over.</p>
     <div class="man-mr">
       <label>Round</label>
       <select class="man-rs" id="man-round">
@@ -484,6 +486,7 @@ body.light .ar-bar{background:#e8f5e8}
       </select>
       <label style="margin-left:12px"><input type="checkbox" id="man-done" style="margin-right:6px"> Tournament complete</label>
     </div>
+    <div class="man-hint">Tab between score fields to move quickly. Leave blank to keep existing score.</div>
     <div class="man-gr" id="man-grid"></div>
     <div class="man-ac">
       <button class="btn btn-pr btn-sm" onclick="applyManual()">Apply Scores</button>
@@ -498,9 +501,13 @@ body.light .ar-bar{background:#e8f5e8}
 <div class="panel" id="panel-tiers">
   <div class="tier-view-sbar">
     <div class="tier-view-info" id="tier-view-info"></div>
-    <button class="odds-btn" id="odds-btn" onclick="toggleOdds()" style="display:none">Show Odds</button>
+    <div style="display:flex;gap:6px">
+      <button class="odds-btn" id="odds-btn" onclick="toggleOdds()" style="display:none">Show Odds</button>
+      <button class="odds-btn" id="picks-sum-btn" onclick="togglePicksSummary()" style="display:none">Show Picks</button>
+    </div>
   </div>
   <div id="tier-view-container"></div>
+  <div id="tier-picks-summary" style="display:none;margin-top:20px;border-top:1px solid var(--bd);padding-top:20px"></div>
 </div>
 
 
@@ -994,8 +1001,8 @@ function applyManual(){
   const done=document.getElementById('man-done').checked;
   // Read current input values
   allNames.forEach(nm=>{
-    const key='msi-'+btoa(nm).replace(/=/g,'');
-    const el=document.getElementById(key);
+    const safeId='msi-'+btoa(unescape(encodeURIComponent(nm))).replace(/[^a-zA-Z0-9]/g,'');
+    const el=document.getElementById(safeId);
     if(el&&!manInputs[nm].cut)manInputs[nm].score=el.value;
   });
   const ns={};
@@ -1292,10 +1299,78 @@ function checkTierPickMismatch(){
     });
   });
   const warn=document.getElementById('tier-warn');
-  if(mismatches.length){
-    warn.innerHTML='<strong>\u26A0\uFE0F Some picks no longer match the tier list:</strong> '+mismatches.join(', ')+'. Picks have been kept \u2014 review below.';
-    warn.style.display='block';
-  }else{warn.style.display='none';}
+  checkTierFieldValidation(warn, mismatches.length>0?mismatches:null);
+}
+
+function checkTierFieldValidation(warnEl, existingMismatches){
+  const warn=warnEl||document.getElementById('tier-warn');
+  if(!warn)return;
+  if(!hasTiers()){warn.style.display='none';return;}
+  const scores=state.scores||{};
+  const espnNames=Object.keys(scores).map(n=>n.toLowerCase().replace(/[^a-z\s]/g,'').trim());
+  const parts=[];
+  if(existingMismatches&&existingMismatches.length){
+    parts.push('<strong>\u26A0\uFE0F Pick mismatches:</strong> '+existingMismatches.join(', '));
+  }
+  if(espnNames.length){
+    // Find tier players not in ESPN field using fuzzy match
+    const notInField=[];
+    state.tiers.forEach((t,ti)=>{
+      t.forEach(p=>{
+        const nm=p.name.trim();
+        if(!nm)return;
+        const a=nm.toLowerCase().replace(/[^a-z\s]/g,'').trim();
+        const aw=a.split(/\s+/);
+        const found=espnNames.some(b=>{
+          if(a===b)return true;
+          const bw=b.split(/\s+/);
+          return aw.filter(w=>bw.includes(w)).length/Math.max(aw.length,bw.length)>=0.5;
+        });
+        if(!found)notInField.push('T'+(ti+1)+': '+nm);
+      });
+    });
+    if(notInField.length){
+      parts.push('<strong>\u26A0\uFE0F Not in ESPN field ('+notInField.length+'):</strong> '+notInField.join(', '));
+    }
+  }
+  if(parts.length){warn.innerHTML=parts.join('<br>');warn.style.display='block';}
+  else{warn.style.display='none';}
+}
+
+let showPicksSumInTiers=false;
+
+function togglePicksSummary(){
+  showPicksSumInTiers=!showPicksSumInTiers;
+  const btn=document.getElementById('picks-sum-btn');
+  if(btn){btn.textContent=showPicksSumInTiers?'Hide Picks':'Show Picks';btn.classList.toggle('on',showPicksSumInTiers);}
+  const container=document.getElementById('tier-picks-summary');
+  if(!container)return;
+  if(!showPicksSumInTiers){container.style.display='none';return;}
+  container.style.display='block';
+  renderPicksSummaryInTiers(container);
+}
+
+function renderPicksSummaryInTiers(container){
+  const parts=state.participants.filter(p=>p.name.trim());
+  if(!parts.length){
+    container.innerHTML='<div style="font-size:13px;color:var(--mu)">No participants yet.</div>';
+    return;
+  }
+  let html='<div class="tps-hdr">Pool Picks</div>';
+  // Use the same table/card logic but always show both \u2014 default table on desktop, cards on mobile
+  // Table view
+  html+='<div class="ps-tbl-wrap"><table class="ps-tbl"><thead><tr><th>Participant</th>';
+  for(let i=0;i<PICKS;i++)html+='<th class="tier-hd" style="border-top:3px solid '+TC[i]+'">T'+(i+1)+(i===PICKS-1?' / WC':'')+'</th>';
+  html+='</tr></thead><tbody>';
+  parts.forEach(p=>{
+    html+='<tr><td class="name-cell">'+escH(p.name)+'</td>';
+    p.picks.forEach((pk)=>{
+      html+='<td class="tier-cell">'+escH(pk.trim()||'\u2014')+'</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  container.innerHTML=html;
 }
 
 function toggleOdds(){
