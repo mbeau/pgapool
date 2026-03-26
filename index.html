@@ -680,8 +680,8 @@ const SCHEDULE=[
 // tiers: array of 6 arrays, each with {name,odds} objects (9 named + wild card slot 10 in tier 6)
 const TIER_SIZE=10; // tiers 1-5: 10 named players; tier 6: 9 named + Wild Card as 10th
 let state={
-  participants:[{id:1,name:'',picks:Array(PICKS).fill(''),tiebreaker:''},{id:2,name:'',picks:Array(PICKS).fill(''),tiebreaker:''}],
-  nextId:3, scores:{}, prevScores:{}, meta:null, lastRefresh:null,
+  participants:[],
+  nextId:1, scores:{}, prevScores:{}, meta:null, lastRefresh:null,
   aws:'', tid:'', scoreSource:null, poolHist:{}, darkMode:true, poolName:'The Pool',
   tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''}))),
   tiersTourn:''
@@ -708,6 +708,10 @@ function loadSaved(){
     const s=localStorage.getItem('pgaPool8');
     if(s){
       const d=JSON.parse(s);Object.assign(state,d);
+      // Strip blank-named participants from old test data
+      state.participants=state.participants.filter(p=>p.name&&p.name.trim());
+      if(!state.nextId||state.nextId<=state.participants.length)
+        state.nextId=Math.max(1,...state.participants.map(p=>p.id+1));
       // Migrate: ensure tiers array exists and is correct shape
       if(!state.tiers||state.tiers.length!==PICKS){
         state.tiers=Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
@@ -1327,6 +1331,34 @@ function renderTierView(){
   container.innerHTML=html;
 }
 
+function addBulk(){
+  const inp=document.getElementById('bulk-in');
+  const st=document.getElementById('bulk-st');
+  if(!inp)return;
+  const raw=inp.value;
+  if(!raw.trim()){if(st){st.textContent='Nothing entered.';st.className='bulk-st err';}return;}
+  const cols=raw.split('\t');
+  const name=(cols[0]||'').trim();
+  if(!name){if(st){st.textContent='Name is required as the first column.';st.className='bulk-st err';}return;}
+  const tbRaw=(cols[1]||'').trim().replace(/[^0-9\-+]/g,'');
+  const tiebreaker=tbRaw!==''&&!isNaN(Number(tbRaw))?tbRaw:'';
+  const picks=[];
+  for(let i=0;i<PICKS;i++)picks.push((cols[2+i]||'').trim());
+  const existing=state.participants.find(p=>p.name.trim().toLowerCase()===name.toLowerCase());
+  if(existing){
+    existing.tiebreaker=tiebreaker;
+    existing.picks=[...picks,...Array(PICKS).fill('')].slice(0,PICKS);
+    if(st){st.textContent='\u2713 Updated: '+name;st.className='bulk-st ok';}
+  }else{
+    state.participants.push({id:state.nextId++,name,tiebreaker,picks:[...picks,...Array(PICKS).fill('')].slice(0,PICKS)});
+    if(st){st.textContent='\u2713 Added: '+name+' ('+picks.filter(Boolean).length+' of '+PICKS+' picks)';st.className='bulk-st ok';}
+  }
+  inp.value='';
+  shareUrl=null;save();
+  renderParticipants();
+  if(st)setTimeout(()=>{st.textContent='';},3000);
+}
+
 // \u2500\u2500 PARTICIPANTS SETUP \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function addPart(){
   state.participants.push({id:state.nextId++,name:'',picks:Array(PICKS).fill(''),tiebreaker:''});
@@ -1814,8 +1846,8 @@ function applyDark(){
 
 function resetAll(){
   if(!confirm('Clear all pool data?'))return;
-  state={participants:[{id:1,name:'',picks:Array(PICKS).fill(''),tiebreaker:''},{id:2,name:'',picks:Array(PICKS).fill(''),tiebreaker:''}],
-    nextId:3,scores:{},prevScores:{},meta:null,lastRefresh:null,aws:'',tid:'',scoreSource:null,poolHist:{},darkMode:state.darkMode,
+  state={participants:[],
+    nextId:1,scores:{},prevScores:{},meta:null,lastRefresh:null,aws:'',tid:'',scoreSource:null,poolHist:{},darkMode:state.darkMode,
     tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''}))),tiersTourn:''};
   shareUrl=null;expandedId=null;
   save();init();
@@ -1842,6 +1874,9 @@ function init(){
   renderPicksSummary();
   validatePicks();
   renderCopyFormLists();
+  // Wire bulk entry Enter key
+  const bulkIn=document.getElementById('bulk-in');
+  if(bulkIn)bulkIn.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addBulk();}});
   if(isViewOnly){
     document.getElementById('tab-setup').style.display='none';
     document.getElementById('man-tog').style.display='none';
