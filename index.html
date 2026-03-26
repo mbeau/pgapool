@@ -1222,6 +1222,8 @@ function buildSharePayload(){
   return {
     v:7,aws:state.aws,tid:state.tid,pn:state.poolName||'The Pool',
     ti:tierNames,
+    scores:state.scores||{},
+    meta:state.meta||null,
     p:state.participants.filter(p=>p.name.trim()).map(p=>({
       n:p.name.trim(),t:p.tiebreaker,pk:p.picks.map(pk=>pk.trim())
     }))
@@ -2075,7 +2077,7 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
   // Tiebreak cell
   let tbHtml='<div class="lb-tb'+(isTied&&row.tbD===0?' win':'')+'"></div>';
   if(isTied&&row.tbG!==null){
-    tbHtml='<div class="lb-tb'+(row.tbD===0?' win':'')+'"><span class="tbv">'+fmtS(row.tbG)+'</span><span>\u00B1'+(row.tbD!==null?row.tbD:'?')+'</span></div>';
+    tbHtml='<div class="lb-tb'+(row.tbD===0?' win':'')+'"><span class="tbv">'+fmtS(row.tbG)+'</span>'+(row.tbD!==null?'<span>\u00B1'+row.tbD+'</span>':'')+'</div>';
   }
 
   // Rank icon
@@ -2385,7 +2387,12 @@ function init(){
     document.getElementById('man-tog').style.display='none';
     document.getElementById('edit-btn').style.display='none';
     document.getElementById('ar-btn').style.display='none';
+    document.getElementById('ref-btn').style.display='none';
+    document.getElementById('tlb-ref-btn').style.display='none';
     document.getElementById('vob').style.display='flex';
+    // Update banner text \u2014 participants can't refresh ESPN scores
+    const vobS=document.querySelector('.vob-s');
+    if(vobS)vobS.textContent='Scores are updated automatically. Use the Tournament tab to see the full field.';
   }
 }
 
@@ -2411,6 +2418,15 @@ function loadFromPayload(payload){
     while(state.tiers.length<PICKS)state.tiers.push(
       Array.from({length:state.tiers.length===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''}))
     );
+  }
+  // Load scores written by GitHub Actions auto-updater
+  if(payload.scores&&typeof payload.scores==='object'){
+    state.scores=payload.scores;
+    state.scoreSource='espn';
+  }
+  if(payload.meta&&typeof payload.meta==='object'){
+    state.meta=payload.meta;
+    state.lastRefresh=payload.meta.lastRefresh||null;
   }
 }
 
