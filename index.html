@@ -1306,14 +1306,14 @@ function checkTierFieldValidation(warnEl, existingMismatches){
   const warn=warnEl||document.getElementById('tier-warn');
   if(!warn)return;
   if(!hasTiers()){warn.style.display='none';return;}
-  const scores=state.scores||{};
-  const espnNames=Object.keys(scores).map(n=>n.toLowerCase().replace(/[^a-z\s]/g,'').trim());
   const parts=[];
   if(existingMismatches&&existingMismatches.length){
     parts.push('<strong>\u26A0\uFE0F Pick mismatches:</strong> '+existingMismatches.join(', '));
   }
-  if(espnNames.length){
-    // Find tier players not in ESPN field using fuzzy match
+  // Use full tournament field from tournLbData, not state.scores (which is only picked players)
+  const fullField=tournLbData&&tournLbData.players&&tournLbData.players.length?tournLbData.players:null;
+  if(fullField){
+    const espnNames=fullField.map(p=>p.name.toLowerCase().replace(/[^a-z\s]/g,'').trim());
     const notInField=[];
     state.tiers.forEach((t,ti)=>{
       t.forEach(p=>{
@@ -1892,6 +1892,7 @@ async function refreshTournLb(){
     const result=await fetchESPN(selT.espnId);
     tournLbData=result;
     renderTournLb();
+    checkTierFieldValidation(null,null);
   }catch(e){
     document.getElementById('tourn-lb-container').innerHTML='<div class="empty"><div class="empty-ic">\u26A0\uFE0F</div><div>Could not load tournament data: '+escH(e.message)+'</div></div>';
   }
