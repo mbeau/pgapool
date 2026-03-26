@@ -339,7 +339,7 @@ body.light .ar-bar{background:#e8f5e8}
 .box-bk{background:var(--sf2);border:1px solid var(--a2)}
 .box-bk h3{color:var(--a2)}
 .bulk-row{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
-.bulk-in{flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:9px 12px;color:var(--tx);font-family:'Barlow',sans-serif;font-size:13px;outline:none}
+.bulk-in{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:9px 12px;color:var(--tx);font-family:'Barlow',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:80px}
 .bulk-in:focus{border-color:var(--a2)}
 .bulk-in::placeholder{color:var(--mu)}
 .bulk-hint{font-size:11px;color:var(--mu);margin-top:6px;line-height:1.6}
@@ -352,11 +352,7 @@ body.light .ar-bar{background:#e8f5e8}
 .val-banner strong{display:block;margin-bottom:4px;font-family:'Barlow Condensed',sans-serif;font-size:14px}
 
 /* PICKS SUMMARY */
-.box-ps{background:var(--sf2);border:1px solid var(--mu)}
-.box-ps h3{color:var(--mu)}
-.ps-toggle{display:flex;gap:4px;background:var(--bg);border-radius:7px;padding:3px;margin-bottom:14px;border:1px solid var(--bd);width:fit-content}
-.ps-tab{padding:5px 14px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:5px;cursor:pointer;border:none;background:transparent;color:var(--mu)}
-.ps-tab.on{background:var(--ac);color:#000}
+
 /* Table view */
 .ps-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .ps-tbl{border-collapse:collapse;width:100%;min-width:400px}
@@ -561,9 +557,21 @@ body.light .ar-bar{background:#e8f5e8}
       <p>Enter the 6 tiers for this tournament. Add player names and optional odds. Once saved, participant picks will use dropdowns from these lists. Hit <strong>Copy Tier List</strong> to paste into your group chat.</p>
       <div id="tier-warn" class="tier-warn"></div>
       <div class="tier-setup-grid" id="tier-setup-grid"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
         <button class="btn btn-sc btn-sm" onclick="clearTiers()">Clear Tiers</button>
         <button class="btn btn-pr btn-sm" id="copy-tier-btn" onclick="copyTierList()">&#128203; Copy Tier List</button>
+        <button class="btn btn-sc btn-sm" onclick="toggleTierImport()">&#128203; Import from Excel</button>
+      </div>
+      <div id="tier-import-section" style="display:none;border-top:1px solid var(--bd);padding-top:14px;margin-top:4px">
+        <p style="font-size:12px;color:var(--mu);margin-bottom:8px">
+          Set up your Excel sheet with <b>12 columns</b> (T1 Name, T1 Odds, T2 Name, T2 Odds ... T6 Name, T6 Odds) and up to 10 rows of players. Odds are optional. Select all cells, copy, and paste below.
+        </p>
+        <textarea class="bulk-in" id="tier-import-ta" rows="5" placeholder="Paste Excel table here (T1 Name&#9;T1 Odds&#9;T2 Name&#9;T2 Odds&#9;...&#9;T6 Name&#9;T6 Odds)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-pr btn-sm" onclick="importTiersFromExcel()">Import Tiers</button>
+          <button class="btn btn-sc btn-sm" onclick="document.getElementById('tier-import-ta').value=''">Clear</button>
+        </div>
+        <div class="bulk-st" id="tier-import-st" style="margin-top:6px"></div>
       </div>
     </div>
 
@@ -622,26 +630,20 @@ body.light .ar-bar{background:#e8f5e8}
       <div id="val-details"></div>
     </div>
 
-    <!-- PICKS SUMMARY -->
-    <div class="box box-ps">
-      <h3>📋 Picks Summary</h3>
-      <p>Overview of all participant picks across all tiers.</p>
-      <div class="ps-toggle">
-        <button class="ps-tab on" id="ps-tab-tbl" onclick="setPsView('table')">Table</button>
-        <button class="ps-tab" id="ps-tab-card" onclick="setPsView('card')">Cards</button>
-      </div>
-      <div id="ps-container"></div>
-    </div>
-
     <!-- BULK ENTRY -->
     <div class="box box-bk">
       <h3>⚡ Bulk Pick Entry</h3>
       <p>Add a participant quickly by pasting a tab-separated row (e.g. copied from Excel) or typing values separated by tabs. Press Enter or click Add.</p>
-      <div class="bulk-row">
-        <input class="bulk-in" id="bulk-in" placeholder="Name [tab] T1 pick [tab] T2 [tab] T3 [tab] T4 [tab] T5 [tab] T6 [tab] Tiebreaker">
-        <button class="btn btn-sc btn-sm" onclick="addBulk()">Add</button>
+      <textarea class="bulk-in" id="bulk-in" rows="4" placeholder="Paste rows from Excel here (one participant per row)&#10;Name [tab] T1 [tab] T2 [tab] T3 [tab] T4 [tab] T5 [tab] T6 [tab] Tiebreaker"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <button class="btn btn-sc btn-sm" onclick="addBulk()">Import All Rows</button>
+        <button class="btn btn-dn btn-sm" onclick="document.getElementById('bulk-in').value='';document.getElementById('bulk-st').textContent=''">Clear</button>
       </div>
-      <div class="bulk-hint">Format: <b>Name</b> [tab] <b>T1 pick</b> [tab] <b>T2</b> [tab] <b>T3</b> [tab] <b>T4</b> [tab] <b>T5</b> [tab] <b>T6 pick</b> [tab] <b>Tiebreaker</b><br>Works with rows pasted directly from Excel or Google Sheets.</div>
+      <div class="bulk-hint" style="margin-top:8px">
+        Paste a table from Excel or Google Sheets — one participant per row.<br>
+        Column order: <b>Name</b> &nbsp;&#9;&nbsp; <b>T1 pick</b> &nbsp;&#9;&nbsp; <b>T2</b> &nbsp;&#9;&nbsp; <b>T3</b> &nbsp;&#9;&nbsp; <b>T4</b> &nbsp;&#9;&nbsp; <b>T5</b> &nbsp;&#9;&nbsp; <b>T6</b> &nbsp;&#9;&nbsp; <b>Tiebreaker</b><br>
+        A header row is detected and skipped automatically.
+      </div>
       <div class="bulk-st" id="bulk-st"></div>
     </div>
 
@@ -734,6 +736,8 @@ function save(){
 }
 function saveToken(tok){try{if(tok)localStorage.setItem('ghToken',tok);else localStorage.removeItem('ghToken');}catch(e){}}
 function loadToken(){try{return localStorage.getItem('ghToken')||'';}catch(e){return '';}}
+function saveGistId(id,tid){try{if(id)localStorage.setItem('gistId_'+tid,id);}catch(e){}}
+function loadGistId(tid){try{return localStorage.getItem('gistId_'+tid)||null;}catch(e){return null;}}
 
 function loadSaved(){
   try{
@@ -987,6 +991,8 @@ async function doRefresh(){
     updateTournBanner();
     // Check tier players against ESPN field and update tier warning
     checkTierFieldValidation(null,null);
+    // Auto-save to Gist if using Gist mode and a Gist already exists
+    autoSaveGist();
   }catch(e){
     showErr('ESPN API failed: '+e.message+'. Use Manual entry as fallback.');
     document.getElementById('man-pan').classList.add('on');
@@ -994,7 +1000,37 @@ async function doRefresh(){
   btn.innerHTML='\u27F3 Refresh ESPN';btn.disabled=false;
 }
 
-// \u2500\u2500 MANUAL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Auto-save to Gist after ESPN refresh \u2014 silent background update
+async function autoSaveGist(){
+  if(isViewOnly)return; // never auto-save from shared view
+  if(shareMode!=='gist')return; // only in Gist mode
+  if(!currentGistId)return; // only if a Gist already exists for this tournament
+  const tok=loadToken();
+  if(!tok)return; // no token, skip silently
+  try{
+    const payload=buildSharePayload();
+    const body={files:{'pool.json':{content:JSON.stringify(payload)}}};
+    const r=await fetch('https://api.github.com/gists/'+currentGistId,{
+      method:'PATCH',
+      headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},
+      body:JSON.stringify(body)
+    });
+    if(r.ok){
+      // Show subtle saved indicator in status bar
+      const si=document.getElementById('si');
+      if(si){
+        const prev=si.innerHTML;
+        si.innerHTML+=' \u00B7 <span style="color:var(--gr)">\u2713 Link updated</span>';
+        setTimeout(()=>{si.innerHTML=prev;},3000);
+      }
+    }
+  }catch(e){
+    // Fail silently \u2014 auto-save is best-effort, don't interrupt the user
+    console.log('Auto-save Gist failed:',e.message);
+  }
+}
+
+
 function toggleManual(){
   document.getElementById('man-pan').classList.toggle('on');
   buildManGrid();
@@ -1163,6 +1199,7 @@ async function genShareGist(){
     }
     gistData=await r.json();
     currentGistId=gistData.id;
+    saveGistId(currentGistId, state.tid);
     shareUrl=window.location.origin+window.location.pathname+'#gist:'+gistData.id;
     updateShareDisplay();
     copyToClipboard(shareUrl,()=>flashCopied());
@@ -1606,80 +1643,64 @@ function renderTierView(){
   container.innerHTML=html;
 }
 
+function parseBulkRow(cols){
+  // Format: Name [tab] T1 [tab] T2 [tab] T3 [tab] T4 [tab] T5 [tab] T6 [tab] Tiebreaker
+  const name=(cols[0]||'').trim();
+  if(!name)return null;
+  const picks=[];
+  for(let i=0;i<PICKS;i++)picks.push((cols[1+i]||'').trim());
+  const tbRaw=(cols[1+PICKS]||'').trim().replace(/[^0-9\-+]/g,'');
+  const tiebreaker=tbRaw!==''&&!isNaN(Number(tbRaw))?tbRaw:'';
+  return{name,picks,tiebreaker};
+}
+
+function isHeaderRow(cols){
+  // Detect if first cell looks like a header (e.g. "Name", "Participant", "Player")
+  const first=(cols[0]||'').trim().toLowerCase();
+  return['name','participant','player','person','entry'].includes(first);
+}
+
 function addBulk(){
   const inp=document.getElementById('bulk-in');
   const st=document.getElementById('bulk-st');
   if(!inp)return;
   const raw=inp.value;
   if(!raw.trim()){if(st){st.textContent='Nothing entered.';st.className='bulk-st err';}return;}
-  const cols=raw.split('\t');
-  const name=(cols[0]||'').trim();
-  if(!name){if(st){st.textContent='Name is required as the first column.';st.className='bulk-st err';}return;}
-  // Format: Name [tab] T1 [tab] T2 [tab] T3 [tab] T4 [tab] T5 [tab] T6 [tab] Tiebreaker
-  const picks=[];
-  for(let i=0;i<PICKS;i++)picks.push((cols[1+i]||'').trim());
-  const tbRaw=(cols[1+PICKS]||'').trim().replace(/[^0-9\-+]/g,'');
-  const tiebreaker=tbRaw!==''&&!isNaN(Number(tbRaw))?tbRaw:'';
-  const existing=state.participants.find(p=>p.name.trim().toLowerCase()===name.toLowerCase());
-  if(existing){
-    existing.tiebreaker=tiebreaker;
-    existing.picks=[...picks,...Array(PICKS).fill('')].slice(0,PICKS);
-    if(st){st.textContent='\u2713 Updated: '+name;st.className='bulk-st ok';}
-  }else{
-    state.participants.push({id:state.nextId++,name,tiebreaker,picks:[...picks,...Array(PICKS).fill('')].slice(0,PICKS)});
-    if(st){st.textContent='\u2713 Added: '+name+' ('+picks.filter(Boolean).length+' of '+PICKS+' picks)';st.className='bulk-st ok';}
+
+  const lines=raw.split('\n').map(l=>l.replace(/\r/,'')).filter(l=>l.trim());
+  let added=0,updated=0,skipped=0;
+
+  lines.forEach((line,idx)=>{
+    const cols=line.split('\t');
+    // Skip header row
+    if(idx===0&&isHeaderRow(cols))return;
+    const parsed=parseBulkRow(cols);
+    if(!parsed){skipped++;return;}
+    const existing=state.participants.find(p=>p.name.trim().toLowerCase()===parsed.name.toLowerCase());
+    if(existing){
+      existing.tiebreaker=parsed.tiebreaker;
+      existing.picks=[...parsed.picks,...Array(PICKS).fill('')].slice(0,PICKS);
+      updated++;
+    }else{
+      state.participants.push({id:state.nextId++,name:parsed.name,tiebreaker:parsed.tiebreaker,
+        picks:[...parsed.picks,...Array(PICKS).fill('')].slice(0,PICKS)});
+      added++;
+    }
+  });
+
+  if(added===0&&updated===0){
+    if(st){st.textContent='No valid rows found. Check column order.';st.className='bulk-st err';}
+    return;
   }
-  inp.value='';
+
+  const parts=[];
+  if(added)parts.push(added+' added');
+  if(updated)parts.push(updated+' updated');
+  if(skipped)parts.push(skipped+' skipped');
+  if(st){st.textContent='\u2713 '+parts.join(', ')+'. Click Clear to paste a new batch.';st.className='bulk-st ok';}
+
   shareUrl=null;save();
   renderParticipants();
-  if(st)setTimeout(()=>{st.textContent='';},3000);
-}
-
-// \u2500\u2500 PICKS SUMMARY \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-let psView='table';
-function setPsView(v){
-  psView=v;
-  document.getElementById('ps-tab-tbl').classList.toggle('on',v==='table');
-  document.getElementById('ps-tab-card').classList.toggle('on',v==='card');
-  renderPicksSummary();
-}
-function renderPicksSummary(){
-  const el=document.getElementById('ps-container');
-  if(!el)return;
-  const parts=state.participants.filter(p=>p.name.trim());
-  if(!parts.length){el.innerHTML='<div style="font-size:13px;color:var(--mu)">No participants yet.</div>';return;}
-  if(psView==='table'){
-    let html='<div class="ps-tbl-wrap"><table class="ps-tbl"><thead><tr><th>Participant</th><th>TB</th>';
-    for(let i=0;i<PICKS;i++)html+='<th class="tier-hd" style="border-top:3px solid '+TC[i]+'">T'+(i+1)+(i===PICKS-1?' / WC':'')+'</th>';
-    html+='</tr></thead><tbody>';
-    parts.forEach(p=>{
-      html+='<tr><td class="name-cell">'+escH(p.name)+'</td>';
-      html+='<td class="tb-cell">'+(p.tiebreaker?fmtS(Number(p.tiebreaker)):'-')+'</td>';
-      p.picks.forEach((pk,ti)=>{
-        html+='<td class="tier-cell">'+escH(pk.trim()||'-')+'</td>';
-      });
-      html+='</tr>';
-    });
-    html+='</tbody></table></div>';
-    el.innerHTML=html;
-  }else{
-    let html='<div class="ps-cards">';
-    parts.forEach(p=>{
-      html+='<div class="ps-card">'+
-        '<div class="ps-card-name">'+escH(p.name)+'</div>'+
-        '<div class="ps-card-tb">'+(p.tiebreaker?'Tiebreaker: '+fmtS(Number(p.tiebreaker)):'No tiebreaker')+'</div>';
-      p.picks.forEach((pk,ti)=>{
-        const nm=pk.trim();
-        html+='<div class="ps-pick">'+
-          '<span class="ps-pick-t" style="background:'+TC[ti]+'22;color:'+TC[ti]+'">T'+(ti+1)+'</span>'+
-          '<span class="ps-pick-nm">'+escH(nm||'\u2014')+'</span>'+
-        '</div>';
-      });
-      html+='</div>';
-    });
-    html+='</div>';
-    el.innerHTML=html;
-  }
 }
 
 // \u2500\u2500 PICKS VALIDATION \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
@@ -1705,6 +1726,79 @@ function validatePicks(){
 }
 
 // \u2500\u2500 COPY GOOGLE FORM LISTS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+function toggleTierImport(){
+  const sec=document.getElementById('tier-import-section');
+  if(sec)sec.style.display=sec.style.display==='none'?'':'none';
+}
+
+function importTiersFromExcel(){
+  const ta=document.getElementById('tier-import-ta');
+  const st=document.getElementById('tier-import-st');
+  if(!ta)return;
+  const raw=ta.value.trim();
+  if(!raw){if(st){st.textContent='Nothing to import.';st.className='bulk-st err';}return;}
+
+  const lines=raw.split('\n').map(l=>l.replace(/\r$/,''));
+
+  // Detect and skip header row \u2014 if first cell doesn't look like a player name
+  // (contains "T1", "Tier", "Name", "Player" etc.)
+  let startRow=0;
+  const firstCols=(lines[0]||'').split('\t');
+  const firstCell=(firstCols[0]||'').trim().toLowerCase();
+  if(firstCell===''||firstCell.startsWith('t1')||firstCell.startsWith('tier')||
+     firstCell==='name'||firstCell==='player'||firstCell==='t1 name'){
+    startRow=1;
+  }
+
+  // Build new tiers \u2014 6 tiers, each up to TIER_SIZE players (TIER_SIZE-1 for last)
+  const newTiers=Array.from({length:PICKS},(_, ti)=>
+    Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''}))
+  );
+
+  // Each row has up to 12 columns: T1name, T1odds, T2name, T2odds, ... T6name, T6odds
+  // Or just 6 columns with no odds: T1name, T2name, T3name, T4name, T5name, T6name
+  const dataRows=lines.slice(startRow).filter(l=>l.trim());
+  const hasOddsCols=dataRows.length>0&&dataRows[0].split('\t').length>PICKS;
+
+  // Track how many players we've added to each tier
+  const tierCounts=Array(PICKS).fill(0);
+  let totalImported=0;
+
+  dataRows.forEach(line=>{
+    const cols=line.split('\t');
+    for(let ti=0;ti<PICKS;ti++){
+      const maxPlayers=ti===PICKS-1?TIER_SIZE-1:TIER_SIZE;
+      if(tierCounts[ti]>=maxPlayers)continue;
+      const nameIdx=hasOddsCols?ti*2:ti;
+      const oddsIdx=hasOddsCols?ti*2+1:-1;
+      const nm=(cols[nameIdx]||'').trim();
+      if(!nm)continue;
+      const odds=oddsIdx>=0?(cols[oddsIdx]||'').trim():'';
+      newTiers[ti][tierCounts[ti]]={name:nm,odds};
+      tierCounts[ti]++;
+      totalImported++;
+    }
+  });
+
+  if(totalImported===0){
+    if(st){st.textContent='No player names found. Check column order.';st.className='bulk-st err';}
+    return;
+  }
+
+  state.tiers=newTiers;
+  state.tiersTourn=SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'';
+  shareUrl=null;save();
+  renderTierSetup();
+  renderTierView();
+  renderCopyFormLists();
+  validatePicks();
+  checkTierPickMismatch();
+
+  const summary=tierCounts.map((n,ti)=>n+' in T'+(ti+1)).join(', ');
+  if(st){st.textContent='\u2713 Imported '+totalImported+' players: '+summary;st.className='bulk-st ok';}
+}
+
 function renderCopyFormLists(){
   const grid=document.getElementById('cf-grid');
   const hint=document.getElementById('cf-hint');
@@ -2261,6 +2355,9 @@ function init(){
   if(tokEl)tokEl.value=loadToken()||'';
   const savedMode=state.shareMode||'gist';
   shareMode=savedMode;
+  // Restore gist ID for current tournament so auto-save works after page reload
+  if(state.tid&&!currentGistId)currentGistId=loadGistId(state.tid);
+  shareMode=savedMode;
   const gmGist=document.getElementById('sh-mode-gist');
   const gmUrl=document.getElementById('sh-mode-url');
   const gSection=document.getElementById('sh-gist-section');
@@ -2279,12 +2376,10 @@ function init(){
   renderLb();
   renderTierSetup();
   renderTierView();
-  renderPicksSummary();
   validatePicks();
   renderCopyFormLists();
   // Wire bulk entry Enter key
-  const bulkIn=document.getElementById('bulk-in');
-  if(bulkIn)bulkIn.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addBulk();}});
+  // bulk-in is now a textarea \u2014 Enter creates new lines, use Import button
   if(isViewOnly){
     document.getElementById('tab-setup').style.display='none';
     document.getElementById('man-tog').style.display='none';
