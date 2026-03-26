@@ -1381,11 +1381,41 @@ function toggleOdds(){
 function renderTierView(){
   const container=document.getElementById('tier-view-container');
   if(!container)return;
+
+  // Update status bar and button visibility
+  const infoEl=document.getElementById('tier-view-info');
+  const oddsBtn=document.getElementById('odds-btn');
+  const psBtn=document.getElementById('picks-sum-btn');
+
   if(!hasTiers()){
+    if(infoEl)infoEl.innerHTML='';
+    if(oddsBtn)oddsBtn.style.display='none';
+    if(psBtn)psBtn.style.display='none';
     container.innerHTML='<div class="tier-empty"><div style="font-size:40px;margin-bottom:12px">\uD83D\uDCCA</div><div>No tiers set yet.<br>The admin sets tiers in the Setup tab before each tournament.</div></div>';
     return;
   }
+
+  const hasOddsData=state.tiers.some(t=>t.some(p=>p.odds&&p.odds.trim()));
+  const totalPlayers=state.tiers.reduce((s,t)=>s+t.filter(p=>p.name.trim()).length,0);
   const tourn=state.tiersTourn||SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'';
+  if(infoEl)infoEl.innerHTML=(tourn?'<b>'+escH(tourn)+'</b> \u00B7 ':'')+totalPlayers+' players across 6 tiers';
+  if(oddsBtn){
+    oddsBtn.style.display=hasOddsData?'':'none';
+    oddsBtn.textContent=showOdds?'Hide Odds':'Show Odds';
+    oddsBtn.classList.toggle('on',showOdds);
+  }
+  // Show picks button whenever there are participants
+  const hasParts=state.participants.filter(p=>p.name.trim()).length>0;
+  if(psBtn){
+    psBtn.style.display=hasParts?'':'none';
+    psBtn.textContent=showPicksSumInTiers?'Hide Picks':'Show Picks';
+    psBtn.classList.toggle('on',showPicksSumInTiers);
+  }
+  // Re-render picks summary if visible
+  if(showPicksSumInTiers){
+    const psc=document.getElementById('tier-picks-summary');
+    if(psc){psc.style.display='block';renderPicksSummaryInTiers(psc);}
+  }
   let html='';
   if(tourn)html+='<div class="tier-view-lbl" style="font-size:13px;letter-spacing:3px;padding:0 0 16px">'+escH(tourn)+'</div>';
   html+='<div class="tier-view-grid">';
