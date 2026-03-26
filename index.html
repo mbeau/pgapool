@@ -553,7 +553,7 @@ body.light .ar-bar{background:#e8f5e8}
       <div class="tier-setup-grid" id="tier-setup-grid"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-sc btn-sm" onclick="clearTiers()">Clear Tiers</button>
-        <button class="btn btn-pr btn-sm" onclick="copyTierList()">📋 Copy Tier List</button>
+        <button class="btn btn-pr btn-sm" id="copy-tier-btn" onclick="copyTierList()">&#128203; Copy Tier List</button>
       </div>
     </div>
 
@@ -1214,27 +1214,25 @@ function clearTiers(){
 
 function copyTierList(){
   const tourn=state.tiersTourn||SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'Tournament';
-  const lines=['\u26F3 '+tourn+' \u2014 POOL TIERS','\u2550'.repeat(36),''];
+  const lines=['\u26F3 '+tourn+' \u2014 POOL TIERS',''];
   state.tiers.forEach((t,ti)=>{
     const isLast=ti===PICKS-1;
-    lines.push('TIER '+(ti+1)+(isLast?' (+ Wild Card)':''));
-    lines.push('\u2500'.repeat(24));
+    lines.push('\ud83d\udd35 TIER '+(ti+1)+(isLast?' (+ Wild Card)':''));
     let count=0;
     t.forEach((p,pi)=>{
       if(!p.name.trim())return;
-      const n=(ti*TIER_SIZE+pi+1);
-      const odds=p.odds.trim()?'  '+p.odds.trim():'';
-      lines.push(String(n).padStart(2)+'. '+p.name.trim().padEnd(26)+odds);
+      lines.push('  '+(count+1)+'. '+p.name.trim());
       count++;
     });
-    if(!count)lines.push('    (not filled in)');
-    if(isLast)lines.push(' WC  Wild Card                    Any player in field');
+    if(!count)lines.push('  (not filled in)');
+    if(isLast)lines.push('  '+(count+1)+'. \uD83C\uDCCF Wild Card \u2014 any player in the field');
     lines.push('');
   });
-  lines.push('Pick one player from each tier. Tier 6 Wild Card = any player not listed above.');
+  lines.push('Pick ONE player from each tier (T1\u2013T6).');
+  lines.push('Tier 6: choose any named player or the Wild Card (any player in the field).');
   const txt2=lines.join('\n');
-  const btn2=document.querySelector('#panel-setup .btn-pr');
-  const doFlash2=()=>{if(btn2){const t=btn2.textContent;btn2.textContent='\u2713 Copied!';setTimeout(()=>btn2.textContent=t,2000);}};
+  const btn2=document.getElementById('copy-tier-btn');
+  const doFlash2=()=>{if(btn2){const t=btn2.textContent;btn2.innerHTML='&#10003; Copied!';setTimeout(()=>btn2.innerHTML=t,2000);}};
   if(navigator.clipboard&&window.isSecureContext){
     navigator.clipboard.writeText(txt2).then(doFlash2).catch(()=>{
       const ta=document.createElement('textarea');ta.value=txt2;
