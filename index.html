@@ -459,7 +459,6 @@ body.light .ar-bar{background:#e8f5e8}
     <span class="tc-lnk" id="change-lnk" onclick="showTab('setup')" style="display:none">Change</span>
   </div>
   <div id="no-t" class="no-t" style="display:none"><strong>No tournament selected.</strong> Go to Setup to pick one.</div>
-  <div id="tie-ban" class="tie-ban" style="display:none">🎯 <strong>Tiebreaker active</strong> — tied players ranked by closest winning score guess <span class="tie-val" id="tie-val"></span></div>
   <div id="ar-bar" class="ar-bar" style="display:none">
     <div class="ar-dot"></div>
     <span>Auto-refreshing every</span>
@@ -512,8 +511,8 @@ body.light .ar-bar{background:#e8f5e8}
       <button class="odds-btn" id="picks-sum-btn" onclick="togglePicksSummary()" style="display:none">Show Picks</button>
     </div>
   </div>
+  <div id="tier-picks-summary" style="display:none;margin-bottom:20px;border-bottom:1px solid var(--bd);padding-bottom:20px"></div>
   <div id="tier-view-container"></div>
-  <div id="tier-picks-summary" style="display:none;margin-top:20px;border-top:1px solid var(--bd);padding-top:20px"></div>
 </div>
 
 
@@ -1998,11 +1997,7 @@ function renderLb(){
       tiedIds.add(active[i].id);tiedIds.add(active[i+1].id);
     }
   }
-  const tieBan=document.getElementById('tie-ban');
-  if(tiedIds.size>0){
-    tieBan.style.display='flex';
-    document.getElementById('tie-val').textContent=ws!==null?'Actual: '+fmtS(ws):'Winning score TBD';
-  }else tieBan.style.display='none';
+  // tie banner removed \u2014 tiebreaker info shown inline on player cards
 
   // Prev pool scores for movement
   const prevPool={};
@@ -2282,7 +2277,15 @@ function renderTournLb(){
 function updateStatusBar(){
   const allNames=getAllNames();
   const elim=buildRows().filter(r=>r.eliminated);
-  let html=state.lastRefresh?'Last updated: <b>'+state.lastRefresh+'</b>':'No scores loaded yet';
+  const hasScores=Object.keys(state.scores||{}).length>0;
+  let html;
+  if(state.lastRefresh&&state.lastRefresh!=='auto'){
+    html='Last updated: <b>'+state.lastRefresh+'</b>';
+  }else if(hasScores){
+    html='Scores loaded';
+  }else{
+    html='No scores loaded yet';
+  }
   if(state.meta)html+=' \u00B7 <b>'+allNames.length+'</b> golfers tracked';
   if(elim.length)html+=' \u00B7 <span style="color:var(--re)"><b>'+elim.length+'</b> eliminated</span>';
   document.getElementById('si').innerHTML=html;
