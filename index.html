@@ -819,14 +819,27 @@ function calcPool(picks){
   if(!v.length)return null;
   return v.reduce((s,x)=>s+x,0);
 }
-function normName(s){return s.toLowerCase().replace(/[^a-z\s]/g,'').trim();}
+function normName(s){
+  // Expand accented/special characters to ASCII equivalents before matching
+  s=s.toLowerCase();
+  [['\xe4','ae'],['\xf6','oe'],['\xfc','ue'],['\xdf','ss'],['\xf8','o'],['\xe5','aa'],
+   ['\xe6','ae'],['\xe9','e'],['\xe8','e'],['\xea','e'],['\xeb','e'],['\xe1','a'],
+   ['\xe0','a'],['\xe2','a'],['\xe3','a'],['\xed','i'],['\xec','i'],['\xee','i'],
+   ['\xf3','o'],['\xf2','o'],['\xf4','o'],['\xf5','o'],['\xfa','u'],['\xf9','u'],
+   ['\xfb','u'],['\xf1','n'],['\xe7','c']].forEach(([a,b])=>s=s.split(a).join(b));
+  return s.replace(/[^a-z\s]/g,'').trim();
+}
 function nameSim(a,b){
   const ta=normName(a).split(/\s+/),tb=normName(b).split(/\s+/);
-  const h=ta.filter(t=>tb.includes(t)).length;
-  const sim=h/Math.max(ta.length,tb.length);
-  // Require higher confidence when only one word matches (e.g. just last name)
-  // This prevents "Michael Kim" matching "Tom Kim" at 0.5
-  if(h===1&&(ta.length>1||tb.length>1))return sim*0.7;
+  if(!ta.length||!tb.length)return 0;
+  const shared=ta.filter(t=>tb.includes(t));
+  const sim=shared.length/Math.max(ta.length,tb.length);
+  if(shared.length===1&&(ta.length>1||tb.length>1)){
+    const lastA=ta[ta.length-1],lastB=tb[tb.length-1];
+    const firstA=ta[0],firstB=tb[0];
+    // Same last name but different first, or different last name \u2014 penalise heavily
+    if((lastA===lastB&&firstA!==firstB)||lastA!==lastB)return sim*0.4;
+  }
   return sim;
 }
 function findPlayer(name,list){
