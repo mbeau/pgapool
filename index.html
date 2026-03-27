@@ -823,12 +823,27 @@ function normName(s){return s.toLowerCase().replace(/[^a-z\s]/g,'').trim();}
 function nameSim(a,b){
   const ta=normName(a).split(/\s+/),tb=normName(b).split(/\s+/);
   const h=ta.filter(t=>tb.includes(t)).length;
-  return h/Math.max(ta.length,tb.length);
+  const sim=h/Math.max(ta.length,tb.length);
+  // Require higher confidence when only one word matches (e.g. just last name)
+  // This prevents "Michael Kim" matching "Tom Kim" at 0.5
+  if(h===1&&(ta.length>1||tb.length>1))return sim*0.7;
+  return sim;
 }
 function findPlayer(name,list){
   const lo=name.toLowerCase();
   let m=list.find(p=>p.name.toLowerCase()===lo);
   if(m)return m;
+  // Also try exact last name + first initial match
+  const parts=normName(name).split(/\s+/);
+  if(parts.length>=2){
+    const last=parts[parts.length-1];
+    const first=parts[0];
+    m=list.find(p=>{
+      const pp=normName(p.name).split(/\s+/);
+      return pp[pp.length-1]===last&&pp[0]===first;
+    });
+    if(m)return m;
+  }
   let best=null,bs=0;
   list.forEach(p=>{const s=nameSim(name,p.name);if(s>bs){bs=s;best=p;}});
   return bs>=0.5?best:null;
