@@ -378,7 +378,6 @@ body.light .ar-bar{background:#e8f5e8}
     <span class="tc-lnk" id="change-lnk" onclick="showTab('setup')" style="display:none">Change</span>
   </div>
   <div id="no-t" class="no-t" style="display:none"><strong>No tournament selected.</strong> Go to Setup to pick one.</div>
-  <div id="tie-ban" class="tie-ban" style="display:none">🎯 <strong>Tiebreaker active</strong> — tied players ranked by closest winning score guess <span class="tie-val" id="tie-val"></span></div>
   <div id="ar-bar" class="ar-bar" style="display:none">
     <div class="ar-dot"></div>
     <span>Auto-refreshing every</span>
@@ -397,7 +396,7 @@ body.light .ar-bar{background:#e8f5e8}
     <div class="sa">
       <button class="btn btn-mn btn-sm" id="man-tog" onclick="toggleManual()">✏️ Manual</button>
       <button class="btn btn-sc btn-sm" id="edit-btn" onclick="showTab('setup')">Edit</button>
-      <button class="btn btn-sc btn-sm" id="ar-btn" onclick="startAr()">⏱ Auto</button>
+      <button class="btn btn-sc btn-sm" id="ar-btn" onclick="startAr()" style="display:none">⏱ Auto</button>
       <button class="btn btn-pr btn-sm" id="ref-btn" onclick="doRefresh()">⟳ Refresh ESPN</button>
     </div>
   </div>
@@ -523,7 +522,7 @@ body.light .ar-bar{background:#e8f5e8}
 <script>
 'use strict';
 
-// ── CONFIG ──────────────────────────────────────────────────────────────────
+// \u2500\u2500 CONFIG \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 const PICKS=6,COUNT=4,CUTS_OUT=3;
 const TC=["#c9a84c","#9ba8b8","#a0714a","#4c9ac9","#7a6eb0","#5a7e5a"];
 
@@ -560,7 +559,7 @@ const SCHEDULE=[
   });
 })();
 
-// ── STATE ───────────────────────────────────────────────────────────────────
+// \u2500\u2500 STATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // tiers: array of 6 arrays, each with {name,odds} objects (9 named + wild card slot 10 in tier 6)
 const TIER_SIZE=10; // tiers 1-5: 10 named players; tier 6: 9 named + Wild Card as 10th
 let state={
@@ -603,7 +602,7 @@ function loadSaved(){
   }catch(e){}
 }
 
-// ── URL HASH ─────────────────────────────────────────────────────────────────
+// \u2500\u2500 URL HASH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function encodeHash(){
   try{
     // Only include non-empty tier names for compactness
@@ -644,7 +643,7 @@ function decodeHash(hash){
   }catch(e){return null;}
 }
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
+// \u2500\u2500 HELPERS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function fmtS(n){
   if(n===null||n===undefined)return '-';
   if(n===0)return 'E';
@@ -661,11 +660,26 @@ function calcPool(picks){
   if(!v.length)return null;
   return v.reduce((s,x)=>s+x,0);
 }
-function normName(s){return s.toLowerCase().replace(/[^a-z\s]/g,'').trim();}
+function normName(s){
+  s=s.toLowerCase();
+  [['\xe4','ae'],['\xf6','oe'],['\xfc','ue'],['\xdf','ss'],['\xf8','o'],['\xe5','aa'],
+   ['\xe6','ae'],['\xe9','e'],['\xe8','e'],['\xea','e'],['\xeb','e'],['\xe1','a'],
+   ['\xe0','a'],['\xe2','a'],['\xe3','a'],['\xed','i'],['\xec','i'],['\xee','i'],
+   ['\xf3','o'],['\xf2','o'],['\xf4','o'],['\xf5','o'],['\xfa','u'],['\xf9','u'],
+   ['\xfb','u'],['\xf1','n'],['\xe7','c']].forEach(([a,b])=>s=s.split(a).join(b));
+  return s.replace(/[^a-z\s]/g,'').trim();
+}
 function nameSim(a,b){
   const ta=normName(a).split(/\s+/),tb=normName(b).split(/\s+/);
-  const h=ta.filter(t=>tb.includes(t)).length;
-  return h/Math.max(ta.length,tb.length);
+  if(!ta.length||!tb.length)return 0;
+  const shared=ta.filter(t=>tb.includes(t));
+  const sim=shared.length/Math.max(ta.length,tb.length);
+  if(shared.length===1&&(ta.length>1||tb.length>1)){
+    const lastA=ta[ta.length-1],lastB=tb[tb.length-1];
+    const firstA=ta[0],firstB=tb[0];
+    if((lastA===lastB&&firstA!==firstB)||lastA!==lastB)return sim*0.4;
+  }
+  return sim;
 }
 function findPlayer(name,list){
   const lo=name.toLowerCase();
@@ -681,7 +695,7 @@ function parseScore(v){
   const n=parseInt(v,10);return isNaN(n)?null:n;
 }
 
-// ── ESPN API ─────────────────────────────────────────────────────────────────
+// \u2500\u2500 ESPN API \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function fetchESPN(espnId){
   const res=await fetch('https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard?event='+espnId);
   if(!res.ok)throw new Error('ESPN returned '+res.status);
@@ -741,14 +755,14 @@ async function fetchESPN(espnId){
   return{tournament:event.name,round,isComplete,actualWinningScore:aws,players};
 }
 
-// ── REFRESH ──────────────────────────────────────────────────────────────────
+// \u2500\u2500 REFRESH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function doRefresh(){
   const selT=SCHEDULE.find(t=>t.id===state.tid);
   const allNames=getAllNames();
   if(!selT){showErr('Please select a tournament in Setup first.');return;}
   if(!allNames.length){showErr('Add some player picks first!');return;}
   const btn=document.getElementById('ref-btn');
-  btn.innerHTML='<span class="spin">⟳</span> Fetching…';btn.disabled=true;
+  btn.innerHTML='<span class="spin">\u27F3</span> Fetching\u2026';btn.disabled=true;
   clearErr();
   try{
     const result=await fetchESPN(selT.espnId);
@@ -765,9 +779,12 @@ async function doRefresh(){
     });
     state.prevScores=JSON.parse(JSON.stringify(state.scores));
     state.scores=matched;
-    state.meta={tournament:result.tournament,round:result.round,isComplete:result.isComplete};
+    const now=new Date();
+    const h=now.getHours(),m=now.getMinutes(),ampm=h>=12?'PM':'AM';
+    const refreshTime=(h%12||12)+':'+(m<10?'0':'')+m+' '+ampm;
+    state.lastRefresh=refreshTime;
+    state.meta={tournament:result.tournament,round:result.round,isComplete:result.isComplete,lastRefresh:refreshTime};
     state.scoreSource='espn';
-    state.lastRefresh=new Date().toLocaleTimeString();
     if(result.isComplete&&result.actualWinningScore!=null)state.aws=String(result.actualWinningScore);
     // Pool history
     const nowR=result.round||'R?';
@@ -781,12 +798,12 @@ async function doRefresh(){
     });
     if(notFound.length){
       const b=document.getElementById('un-banner');
-      b.innerHTML='<strong>⚠️ '+notFound.length+' player'+(notFound.length>1?'s':'')+' not found in ESPN data:</strong> '+notFound.join(', ')+' — check spelling or use Manual entry.';
+      b.innerHTML='<strong>\u26A0\uFE0F '+notFound.length+' player'+(notFound.length>1?'s':'')+' not found in ESPN data:</strong> '+notFound.join(', ')+' \u2014 check spelling or use Manual entry.';
       b.style.display='block';
     }else{document.getElementById('un-banner').style.display='none';}
     if(wd.length){
       const b=document.getElementById('wd-banner');
-      b.innerHTML='<strong>⚠️ Withdrawal Alert</strong>'+wd.join(', ')+(wd.length===1?' has':' have')+' withdrawn. Check with admin.';
+      b.innerHTML='<strong>\u26A0\uFE0F Withdrawal Alert</strong>'+wd.join(', ')+(wd.length===1?' has':' have')+' withdrawn. Check with admin.';
       b.style.display='block';
     }else{document.getElementById('wd-banner').style.display='none';}
     save();
@@ -797,10 +814,10 @@ async function doRefresh(){
     showErr('ESPN API failed: '+e.message+'. Use Manual entry as fallback.');
     document.getElementById('man-pan').classList.add('on');
   }
-  btn.innerHTML='⟳ Refresh ESPN';btn.disabled=false;
+  btn.innerHTML='\u27F3 Refresh ESPN';btn.disabled=false;
 }
 
-// ── MANUAL ───────────────────────────────────────────────────────────────────
+// \u2500\u2500 MANUAL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function toggleManual(){
   document.getElementById('man-pan').classList.toggle('on');
   buildManGrid();
@@ -854,7 +871,7 @@ function applyManual(){
   renderLb();updateStatusBar();updateTournBanner();
 }
 
-// ── AUTO REFRESH ─────────────────────────────────────────────────────────────
+// \u2500\u2500 AUTO REFRESH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function startAr(){
   const mins=parseInt(document.getElementById('ar-sel').value,10)||30;
   arCd=mins*60;
@@ -877,7 +894,7 @@ function changeArMins(){
   if(arInterval){stopAr();startAr();}
 }
 
-// ── SHARE ─────────────────────────────────────────────────────────────────────
+// \u2500\u2500 SHARE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function genShare(){
   if(!state.tid){showErr('Select a tournament first.');return;}
   const hash=encodeHash();
@@ -892,10 +909,10 @@ function copyShare(){
 }
 function flashCopied(){
   const el=document.getElementById('sh-url');
-  el.textContent='✓ Copied to clipboard!';
+  el.textContent='\u2713 Copied to clipboard!';
   el.classList.add('sh-cp');
   const btn=document.getElementById('sh-btn');
-  btn.textContent='✓ Copied!';
+  btn.textContent='\u2713 Copied!';
   clearTimeout(copyTimeout);
   copyTimeout=setTimeout(()=>{
     updateShareDisplay();
@@ -910,17 +927,17 @@ function updateShareDisplay(){
   if(shareUrl){
     el.textContent=shareUrl;
     btn.textContent='Copy Again';
-    if(shareUrl.length>4000){warn.textContent='⚠️ Long URL ('+shareUrl.length+' chars) — shorten at bit.ly.';warn.className='sh-warn wn';}
-    else{warn.textContent='✓ Ready to share ('+shareUrl.length+' chars)';warn.className='sh-warn';}
+    if(shareUrl.length>4000){warn.textContent='\u26A0\uFE0F Long URL ('+shareUrl.length+' chars) \u2014 shorten at bit.ly.';warn.className='sh-warn wn';}
+    else{warn.textContent='\u2713 Ready to share ('+shareUrl.length+' chars)';warn.className='sh-warn';}
   }else{
     el.textContent="Click 'Generate Link' to create a shareable URL";
     btn.textContent='Generate Link';
-    warn.textContent=!state.tid?'⚠️ Select a tournament first.':'All picks and tournament will be encoded in the link.';
+    warn.textContent=!state.tid?'\u26A0\uFE0F Select a tournament first.':'All picks and tournament will be encoded in the link.';
     warn.className='sh-warn';
   }
 }
 
-// ── IMPORT ───────────────────────────────────────────────────────────────────
+// \u2500\u2500 IMPORT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function toggleImport(e){
   e&&e.preventDefault();
   const body=document.getElementById('im-body');
@@ -974,13 +991,13 @@ function parseImport(){
   const existNm=state.participants.filter(p=>p.name.trim()).map(p=>p.name.trim().toLowerCase());
   const conflicts=parsed.filter(r=>existNm.includes(r.name.toLowerCase())).map(r=>r.name);
   imParsed={rows:parsed,conflicts};
-  stEl.textContent='Found '+parsed.length+' participant'+(parsed.length!==1?'s':'')+(conflicts.length?' — '+conflicts.length+' will overwrite existing':'')+'.';
+  stEl.textContent='Found '+parsed.length+' participant'+(parsed.length!==1?'s':'')+(conflicts.length?' \u2014 '+conflicts.length+' will overwrite existing':'')+'.';
   stEl.className='im-st ok';
   document.getElementById('im-merge').style.display='';
   document.getElementById('im-replace').style.display='';
   // Conflicts
   const cf=document.getElementById('im-cf');
-  if(conflicts.length){cf.textContent='⚠️ Will overwrite: '+conflicts.join(', ');cf.style.display='block';}
+  if(conflicts.length){cf.textContent='\u26A0\uFE0F Will overwrite: '+conflicts.join(', ');cf.style.display='block';}
   else cf.style.display='none';
   // Preview rows
   const pv=document.getElementById('im-pv');pv.classList.add('on');
@@ -1011,13 +1028,13 @@ function applyImport(mode){
   document.getElementById('im-body').style.display='none';
   document.querySelector('.im-tog').textContent='Show importer';
   const st=document.getElementById('im-st');
-  st.textContent='✓ Imported '+rows.length+' participant'+(rows.length!==1?'s':'')+'!';
+  st.textContent='\u2713 Imported '+rows.length+' participant'+(rows.length!==1?'s':'')+'!';
   st.className='im-st ok';
   setTimeout(()=>{st.textContent='';},2000);
 }
 
 
-// ── TIERS ─────────────────────────────────────────────────────────────────────
+// \u2500\u2500 TIERS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function getTierPlayers(tierIdx){
   // Returns array of non-empty player names for a given tier (0-indexed)
   if(!state.tiers||!state.tiers[tierIdx])return[];
@@ -1044,11 +1061,11 @@ function clearTiers(){
 
 function copyTierList(){
   const tourn=state.tiersTourn||SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'Tournament';
-  const lines=['⛳ '+tourn+' — POOL TIERS','═'.repeat(36),''];
+  const lines=['\u26F3 '+tourn+' \u2014 POOL TIERS','\u2550'.repeat(36),''];
   state.tiers.forEach((t,ti)=>{
     const isLast=ti===PICKS-1;
     lines.push('TIER '+(ti+1)+(isLast?' (+ Wild Card)':''));
-    lines.push('─'.repeat(24));
+    lines.push('\u2500'.repeat(24));
     let count=0;
     t.forEach((p,pi)=>{
       if(!p.name.trim())return;
@@ -1064,8 +1081,8 @@ function copyTierList(){
   lines.push('Pick one player from each tier. Tier 6 Wild Card = any player not listed above.');
   navigator.clipboard.writeText(lines.join('\n')).then(()=>{
     const btn=document.querySelector('#panel-setup .btn-pr');
-    if(btn){const t=btn.textContent;btn.textContent='✓ Copied!';setTimeout(()=>btn.textContent=t,2000);}
-  }).catch(()=>alert('Could not copy — please copy manually.'));
+    if(btn){const t=btn.textContent;btn.textContent='\u2713 Copied!';setTimeout(()=>btn.textContent=t,2000);}
+  }).catch(()=>alert('Could not copy \u2014 please copy manually.'));
 }
 
 function renderTierSetup(){
@@ -1121,7 +1138,7 @@ function checkTierPickMismatch(){
   });
   const warn=document.getElementById('tier-warn');
   if(mismatches.length){
-    warn.innerHTML='<strong>⚠️ Some picks no longer match the tier list:</strong> '+mismatches.join(', ')+'. Picks have been kept — review below.';
+    warn.innerHTML='<strong>\u26A0\uFE0F Some picks no longer match the tier list:</strong> '+mismatches.join(', ')+'. Picks have been kept \u2014 review below.';
     warn.style.display='block';
   }else{warn.style.display='none';}
 }
@@ -1130,12 +1147,12 @@ function renderTierView(){
   const container=document.getElementById('tier-view-container');
   if(!container)return;
   if(!hasTiers()){
-    container.innerHTML='<div class="tier-empty"><div style="font-size:40px;margin-bottom:12px">📊</div><div>No tiers set yet.<br>The admin sets tiers in the Setup tab before each tournament.</div></div>';
+    container.innerHTML='<div class="tier-empty"><div style="font-size:40px;margin-bottom:12px">\u1F4CA</div><div>No tiers set yet.<br>The admin sets tiers in the Setup tab before each tournament.</div></div>';
     return;
   }
   const tourn=state.tiersTourn||SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'';
   let html='';
-  if(tourn)html+='<div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--mu);padding:0 0 16px">'+escH(tourn)+'</div>';
+  if(tourn)html+='<div style="font-family:'+"'Barlow Condensed'"+',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--mu);padding:0 0 16px">'+escH(tourn)+'</div>';
   html+='<div class="tier-view-grid">';
   state.tiers.forEach((t,ti)=>{
     const isLast=ti===PICKS-1;
@@ -1149,7 +1166,7 @@ function renderTierView(){
       </div>`;
     });
     if(!players.length)rowsHtml='<div style="padding:8px 14px;font-size:12px;color:var(--mu)">Not filled in yet</div>';
-    const wcHtml=isLast?`<div class="tier-view-wc"><span class="tier-view-wc-lbl">🃏 Wild Card</span><span class="tier-view-wc-note">Any player in field</span></div>`:'';
+    const wcHtml=isLast?`<div class="tier-view-wc"><span class="tier-view-wc-lbl">\u1F0CF Wild Card</span><span class="tier-view-wc-note">Any player in field</span></div>`:'';
     html+=`<div class="tier-view-card">
       <div class="tier-view-hd" style="border-top:3px solid ${col}">
         <span class="tier-view-num" style="color:${col}">T${ti+1}</span>
@@ -1162,7 +1179,7 @@ function renderTierView(){
   container.innerHTML=html;
 }
 
-// ── PARTICIPANTS SETUP ────────────────────────────────────────────────────────
+// \u2500\u2500 PARTICIPANTS SETUP \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function addPart(){
   state.participants.push({id:state.nextId++,name:'',picks:Array(PICKS).fill(''),tiebreaker:''});
   shareUrl=null;save();renderParticipants();
@@ -1194,7 +1211,7 @@ function updateHeaderTitle(){
     const name=state.poolName||'The Pool';
     el.innerHTML=name+'<br><span style="font-size:clamp(16px,3vw,24px);font-weight:400;color:var(--mu);letter-spacing:1px">Leaderboard</span>';
   }
-  document.title=(state.poolName||'The Pool')+' — Leaderboard';
+  document.title=(state.poolName||'The Pool')+' \u2014 Leaderboard';
 }
 
 function onAwsChange(){
@@ -1210,7 +1227,7 @@ function onTournChange(){
   shareUrl=null;save();
   const selT=SCHEDULE.find(t=>t.id===state.tid);
   const inf=document.getElementById('tsel-inf');
-  inf.innerHTML=selT?'Scores from: <b>ESPN · '+selT.name+'</b>':'';
+  inf.innerHTML=selT?'Scores from: <b>ESPN \u00B7 '+selT.name+'</b>':'';
   updateTournBanner();updateStatusBar();updateShareDisplay();
   document.getElementById('un-banner').style.display='none';
   document.getElementById('wd-banner').style.display='none';
@@ -1230,15 +1247,15 @@ function renderParticipants(){
       const tierPlayers=getTierPlayers(i);
       const curVal=p.picks[i]||'';
       if(tierPlayers.length>0){
-        // Dropdown mode — tiers are loaded
+        // Dropdown mode \u2014 tiers are loaded
         const opts=tierPlayers.map(nm=>'<option value="'+escH(nm)+'"'+(curVal===nm?' selected':'')+'>'+escH(nm)+'</option>').join('');
-        const wcOpt=isLastTier?'<option value="Wild Card"'+(curVal==='Wild Card'?' selected':'')+'>🃏 Wild Card — any player in field</option>':'';
+        const wcOpt=isLastTier?'<option value="Wild Card"'+(curVal==='Wild Card'?' selected':'')+'>\u1F0CF Wild Card \u2014 any player in field</option>':'';
         const unset=!curVal||(!tierPlayers.includes(curVal)&&curVal!=='Wild Card');
         picksHtml+='<div><div class="tp-l"><span class="tp-b">T'+(i+1)+'</span>'+lbl+'</div>'+
           '<select class="pi" style="appearance:none;-webkit-appearance:none;cursor:pointer;'+(unset?'color:var(--mu)':'')+'" onchange="updatePick('+p.id+','+i+',this.value)">'+
-          '<option value="">— Pick a player —</option>'+opts+wcOpt+'</select></div>';
+          '<option value="">\u2014 Pick a player \u2014</option>'+opts+wcOpt+'</select></div>';
       }else{
-        // Text input fallback — no tiers loaded
+        // Text input fallback \u2014 no tiers loaded
         const ph=isLastTier?'Player name or Wild Card':'Player name';
         picksHtml+='<div><div class="tp-l"><span class="tp-b">T'+(i+1)+'</span>'+lbl+'</div>'+
           '<input class="pi" placeholder="'+ph+'" value="'+escH(curVal)+'" oninput="updatePick('+p.id+','+i+',this.value)"></div>';
@@ -1248,11 +1265,11 @@ function renderParticipants(){
     card.innerHTML=
       '<div class="pc-hd">'+
         '<input placeholder="Participant '+(pi+1)+' name" value="'+escH(p.name)+'" oninput="updateName('+p.id+',this.value)">'+
-        '<button class="btn-rm" onclick="removePart('+p.id+')">✕</button>'+
+        '<button class="btn-rm" onclick="removePart('+p.id+')">\u2715</button>'+
       '</div>'+
       picksHtml+
       '<div class="tb-rw" style="margin-top:8px;margin-bottom:0">'+
-        '<label>🎯 Winning score guess</label>'+
+        '<label>\u1F3AF Winning score guess</label>'+
         '<input type="number" placeholder="-18" value="'+escH(p.tiebreaker)+'" oninput="updateTb('+p.id+',this.value)">'+
         '<span class="tb-pv" id="tb-pv-'+p.id+'">'+(p.tiebreaker!==''?fmtS(Number(p.tiebreaker)):'e.g. -18')+'</span>'+
       '</div>';
@@ -1260,7 +1277,7 @@ function renderParticipants(){
   });
 }
 
-// ── LEADERBOARD RENDER ───────────────────────────────────────────────────────
+// \u2500\u2500 LEADERBOARD RENDER \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function getAllNames(){
   return [...new Set(state.participants.flatMap(p=>p.picks.map(pk=>pk.trim()).filter(Boolean)))];
 }
@@ -1329,7 +1346,7 @@ function renderLb(){
 
   const container=document.getElementById('lb-container');
   if(!rows.length){
-    container.innerHTML='<div class="empty"><div class="empty-ic">🏌️</div><div>No participants yet — go to <strong>Setup</strong> to get started.</div></div>';
+    container.innerHTML='<div class="empty"><div class="empty-ic">\u1F3CC\uFE0F</div><div>No participants yet \u2014 go to <strong>Setup</strong> to get started.</div></div>';
     return;
   }
   container.innerHTML='';
@@ -1342,8 +1359,8 @@ function renderLb(){
       lb.appendChild(makeRow(row,rank,tiedIds,prevPool,ws));
     });
   }
-  if(active.length)addSection('Active · '+active.length+' participants',active,false);
-  if(elim.length)addSection('🚫 Eliminated · '+elim.length+' participants',elim,true);
+  if(active.length)addSection('Active \u00B7 '+active.length+' participants',active,false);
+  if(elim.length)addSection('\u1F6AB Eliminated \u00B7 '+elim.length+' participants',elim,true);
   container.appendChild(lb);
 }
 
@@ -1361,9 +1378,9 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
   let mvHtml='';
   if(prev!==undefined&&prev!==null&&row.poolScore!==null){
     const d=row.poolScore-prev;
-    if(d<0)mvHtml='<span class="mv up">▲'+Math.abs(d)+'</span>';
-    else if(d>0)mvHtml='<span class="mv dn">▼'+d+'</span>';
-    else mvHtml='<span class="mv sm">—</span>';
+    if(d<0)mvHtml='<span class="mv up">\u25B2'+Math.abs(d)+'</span>';
+    else if(d>0)mvHtml='<span class="mv dn">\u25BC'+d+'</span>';
+    else mvHtml='<span class="mv sm">\u2014</span>';
   }
 
   // History
@@ -1377,13 +1394,13 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
   // Tiebreak cell
   let tbHtml='<div class="lb-tb'+(isTied&&row.tbD===0?' win':'')+'"></div>';
   if(isTied&&row.tbG!==null){
-    tbHtml='<div class="lb-tb'+(row.tbD===0?' win':'')+'"><span class="tbv">'+fmtS(row.tbG)+'</span><span>±'+(row.tbD!==null?row.tbD:'?')+'</span></div>';
+    tbHtml='<div class="lb-tb'+(row.tbD===0?' win':'')+'"><span class="tbv">'+fmtS(row.tbG)+'</span>'+(row.tbD!==null?'<span>\u00B1'+row.tbD+'</span>':'')+'</div>';
   }
 
   // Rank icon
-  const rankIcon=row.eliminated?'✕':rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;
+  const rankIcon=row.eliminated?'\u2715':rank===1?'\u1F947':rank===2?'\u1F948':rank===3?'\u1F949':rank;
   const scCls='lb-sc '+(row.eliminated?'elim-sc':row.poolScore===null?'pending':sClass(row.poolScore));
-  const scTxt=row.eliminated?'ELIM':row.poolScore===null?'—':fmtS(row.poolScore);
+  const scTxt=row.eliminated?'ELIM':row.poolScore===null?'\u2014':fmtS(row.poolScore);
   const preview=row.picks.filter(Boolean).slice(0,3).join(', ');
   const extra=row.picks.filter(Boolean).length-3;
   const elimTag=row.eliminated?'<span style="color:var(--re);margin-left:6px">ELIMINATED</span>':'';
@@ -1399,7 +1416,7 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
       '<div>'+mvHtml+'</div>'+
       tbHtml+
       '<div class="'+scCls+'">'+scTxt+'</div>'+
-      '<div class="lb-ch">▾</div>'+
+      '<div class="lb-ch">\u25BE</div>'+
     '</div>'+
     '<div class="lb-pk">'+makeExpandedPicks(row,isTied,ws)+'</div>';
 
@@ -1412,11 +1429,11 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
 
 function makeExpandedPicks(row,isTied,ws){
   let html='';
-  if(row.eliminated)html+='<div class="el-no">🚫 Eliminated — '+row.cutCount+' of '+PICKS+' picks missed the cut after Round 2</div>';
+  if(row.eliminated)html+='<div class="el-no">\u1F6AB Eliminated \u2014 '+row.cutCount+' of '+PICKS+' picks missed the cut after Round 2</div>';
   if(isTied&&row.tbG!==null){
-    html+='<div class="tb-det">🎯 Tiebreaker — guess: <strong>'+fmtS(row.tbG)+'</strong>';
-    if(ws!==null)html+=' · actual: <strong>'+fmtS(ws)+'</strong> · off by <strong>'+(row.tbD!==null?row.tbD:'?')+'</strong>';
-    else html+=' · awaiting final winning score';
+    html+='<div class="tb-det">\u1F3AF Tiebreaker \u2014 guess: <strong>'+fmtS(row.tbG)+'</strong>';
+    if(ws!==null)html+=' \u00B7 actual: <strong>'+fmtS(ws)+'</strong> \u00B7 off by <strong>'+(row.tbD!==null?row.tbD:'?')+'</strong>';
+    else html+=' \u00B7 awaiting final winning score';
     html+='</div>';
   }
   html+='<div class="lb-pks">';
@@ -1430,7 +1447,7 @@ function makeExpandedPicks(row,isTied,ws){
     if(pk.roundScores&&pk.roundScores.length){
       rsHtml='<div class="rs">';
       pk.roundScores.forEach((rs,ri)=>{rsHtml+='<div class="rsc"><span class="rl">R'+(ri+1)+'</span><span class="rv '+sClass(rs)+'">'+fmtS(rs)+'</span></div>';});
-      for(let ri=pk.roundScores.length;ri<4;ri++)rsHtml+='<div class="rsc"><span class="rl">R'+(ri+1)+'</span><span class="rv pending">—</span></div>';
+      for(let ri=pk.roundScores.length;ri<4;ri++)rsHtml+='<div class="rsc"><span class="rl">R'+(ri+1)+'</span><span class="rv pending">\u2014</span></div>';
       rsHtml+='</div>';
     }
     const st=pk.thru?'Thru '+pk.thru:pk.status==='notstarted'?'Not started':pk.status==='notinfield'?'Not in field':pk.status;
@@ -1439,7 +1456,7 @@ function makeExpandedPicks(row,isTied,ws){
         '<div class="pt-tier" style="color:'+pk.tierColor+'">T'+(j+1)+'</div>'+
         '<div class="pn" title="'+escH(pk.name)+'">'+escH(pk.name)+'</div>'+
         '<div class="pm">'+
-          '<div class="pst">'+escH(st)+(pk.position?' · '+escH(pk.position):'')+'</div>'+
+          '<div class="pst">'+escH(st)+(pk.position?' \u00B7 '+escH(pk.position):'')+'</div>'+
           '<div><div class="ps '+(pk.score===null?'':sClass(pk.score))+'">'+fmtS(pk.score)+'</div>'+badge+'</div>'+
         '</div>'+rsHtml+
       '</div>';
@@ -1449,42 +1466,42 @@ function makeExpandedPicks(row,isTied,ws){
 }
 
 
-// ── TOURNAMENT LEADERBOARD ────────────────────────────────────────────────────
+// \u2500\u2500 TOURNAMENT LEADERBOARD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function refreshTournLb(){
   const selT=SCHEDULE.find(t=>t.id===state.tid);
   if(!selT){
-    document.getElementById('tourn-lb-container').innerHTML='<div class="empty"><div class="empty-ic">⛳</div><div>Select a tournament in Setup first.</div></div>';
+    document.getElementById('tourn-lb-container').innerHTML='<div class="empty"><div class="empty-ic">\u26F3</div><div>Select a tournament in Setup first.</div></div>';
     return;
   }
   const btn=document.getElementById('tlb-ref-btn');
-  btn.innerHTML='<span class="spin">⟳</span> Fetching…';btn.disabled=true;
+  btn.innerHTML='<span class="spin">\u27F3</span> Fetching\u2026';btn.disabled=true;
   try{
     const result=await fetchESPN(selT.espnId);
     tournLbData=result;
     renderTournLb();
   }catch(e){
-    document.getElementById('tourn-lb-container').innerHTML='<div class="empty"><div class="empty-ic">⚠️</div><div>Could not load tournament data: '+escH(e.message)+'</div></div>';
+    document.getElementById('tourn-lb-container').innerHTML='<div class="empty"><div class="empty-ic">\u26A0\uFE0F</div><div>Could not load tournament data: '+escH(e.message)+'</div></div>';
   }
-  btn.innerHTML='⟳ Refresh ESPN';btn.disabled=false;
+  btn.innerHTML='\u27F3 Refresh ESPN';btn.disabled=false;
 }
 
 function toggleHighlight(){
   highlightOn=!highlightOn;
   const btn=document.getElementById('hl-btn');
-  if(highlightOn){btn.textContent='⭐ Picks On';btn.classList.add('hl-on');}
-  else{btn.textContent='⭐ Highlight Picks';btn.classList.remove('hl-on');}
+  if(highlightOn){btn.textContent='\u2B50 Picks On';btn.classList.add('hl-on');}
+  else{btn.textContent='\u2B50 Highlight Picks';btn.classList.remove('hl-on');}
   renderTournLb();
 }
 
 function renderTournLb(){
   const container=document.getElementById('tourn-lb-container');
   if(!tournLbData||!tournLbData.players||!tournLbData.players.length){
-    container.innerHTML='<div class="empty"><div class="empty-ic">⛳</div><div>No tournament data loaded yet. Hit Refresh ESPN.</div></div>';
+    container.innerHTML='<div class="empty"><div class="empty-ic">\u26F3</div><div>No tournament data loaded yet. Hit Refresh ESPN.</div></div>';
     return;
   }
   const players=tournLbData.players;
   const si=document.getElementById('tlb-si');
-  si.innerHTML='<b>'+escH(tournLbData.tournament)+'</b> · '+escH(tournLbData.round)+' · <b>'+players.length+'</b> players';
+  si.innerHTML='<b>'+escH(tournLbData.tournament)+'</b> \u00B7 '+escH(tournLbData.round)+' \u00B7 <b>'+players.length+'</b> players';
   // Show highlight button, build pick name set for highlighting
   const hlBtn=document.getElementById('hl-btn');
   if(hlBtn)hlBtn.style.display='';
@@ -1519,41 +1536,45 @@ function renderTournLb(){
   active.forEach(p=>{ html+=rowHtml(p); });
 
   if(cut.length){
-    html+='<div class="tlb-cut" style="color:var(--re)">✂️ Missed Cut — '+cut.length+' players</div>';
+    html+='<div class="tlb-cut" style="color:var(--re)">\u2702\uFE0F Missed Cut \u2014 '+cut.length+' players</div>';
     cut.forEach(p=>{ html+=rowHtml(p); });
   }
   if(wd.length){
-    html+='<div class="tlb-cut" style="color:var(--or)">WD / DQ — '+wd.length+' players</div>';
+    html+='<div class="tlb-cut" style="color:var(--or)">WD / DQ \u2014 '+wd.length+' players</div>';
     wd.forEach(p=>{ html+=rowHtml(p); });
   }
   html+='</div></div>';
   container.innerHTML=html;
 }
 
-// ── UI UPDATES ────────────────────────────────────────────────────────────────
+// \u2500\u2500 UI UPDATES \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function updateStatusBar(){
   const allNames=getAllNames();
   const elim=buildRows().filter(r=>r.eliminated);
-  let html=state.lastRefresh?'Last updated: <b>'+state.lastRefresh+'</b>':'No scores loaded yet';
-  if(state.meta)html+=' · <b>'+allNames.length+'</b> golfers tracked';
-  if(elim.length)html+=' · <span style="color:var(--re)"><b>'+elim.length+'</b> eliminated</span>';
+  const hasScores=Object.keys(state.scores||{}).length>0;
+  let html;
+  if(state.lastRefresh&&state.lastRefresh!=='auto'){html='Last updated: <b>'+state.lastRefresh+'</b>';}
+  else if(hasScores){html='Scores loaded';}
+  else{html='No scores loaded yet';}
+  if(state.meta)html+=' \u00B7 <b>'+allNames.length+'</b> golfers tracked';
+  if(elim.length)html+=' \u00B7 <span style="color:var(--re)"><b>'+elim.length+'</b> eliminated</span>';
   document.getElementById('si').innerHTML=html;
 }
 
 function updateTournBanner(){
   const selT=SCHEDULE.find(t=>t.id===state.tid);
-  document.getElementById('hdr-su').textContent=selT?selT.name+' · '+selT.date:state.meta&&state.meta.tournament||'Select a tournament in Setup to get started';
+  document.getElementById('hdr-su').textContent=selT?selT.name+' \u00B7 '+selT.date:state.meta&&state.meta.tournament||'Select a tournament in Setup to get started';
   const ban=document.getElementById('tb-ban');
   const noT=document.getElementById('no-t');
   if(selT){
     ban.style.display='flex';noT.style.display='none';
     document.getElementById('tb-name').textContent=selT.name;
-    document.getElementById('tb-date').textContent=selT.date+(state.meta&&state.meta.round?' · '+state.meta.round+(state.meta.isComplete?' · Final':''):'');
+    document.getElementById('tb-date').textContent=selT.date+(state.meta&&state.meta.round?' \u00B7 '+state.meta.round+(state.meta.isComplete?' \u00B7 Final':''):'');
     const sb=document.getElementById('src-badge');
     if(state.scoreSource){
       sb.style.display='';
       sb.className='src-b '+(state.scoreSource==='espn'?'src-espn':'src-man');
-      sb.textContent=state.scoreSource==='espn'?'📡 ESPN Live':'✏️ Manual';
+      sb.textContent=state.scoreSource==='espn'?'\u1F4E1 ESPN Live':'\u270F\uFE0F Manual';
     }else sb.style.display='none';
     if(!isViewOnly)document.getElementById('change-lnk').style.display='';
   }else if(!isViewOnly){
@@ -1563,7 +1584,7 @@ function updateTournBanner(){
 
 function showErr(msg){
   const b=document.getElementById('err-banner');
-  b.textContent='⚠️ '+msg;b.style.display='block';
+  b.textContent='\u26A0\uFE0F '+msg;b.style.display='block';
 }
 function clearErr(){document.getElementById('err-banner').style.display='none';}
 
@@ -1586,7 +1607,7 @@ function toggleDark(){
 }
 function applyDark(){
   document.body.classList.toggle('light',!state.darkMode);
-  document.getElementById('dkBtn').textContent=state.darkMode?'☀️':'🌙';
+  document.getElementById('dkBtn').textContent=state.darkMode?'\u2600\uFE0F':'\u1F319';
 }
 
 function resetAll(){
@@ -1598,7 +1619,7 @@ function resetAll(){
   save();init();
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
+// \u2500\u2500 INIT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function init(){
   applyDark();
   updateHeaderTitle();
@@ -1608,7 +1629,7 @@ function init(){
   document.getElementById('aws-in').value=state.aws||'';
   document.getElementById('ws-hi').textContent=state.aws?'Set to '+fmtS(Number(state.aws)):'Not set';
   const selT=SCHEDULE.find(t=>t.id===state.tid);
-  document.getElementById('tsel-inf').innerHTML=selT?'Scores from: <b>ESPN · '+selT.name+'</b>':'';
+  document.getElementById('tsel-inf').innerHTML=selT?'Scores from: <b>ESPN \u00B7 '+selT.name+'</b>':'';
   updateTournBanner();
   updateStatusBar();
   updateShareDisplay();
