@@ -1800,12 +1800,17 @@ async function genShare(){
   try{
     if(shareMode==='gist'){await genShareGist();}
     else{genShareUrl();}
-  }finally{btn.disabled=false;}
+  }catch(e){
+    showErr('Share error: '+e.message);
+  }finally{
+    btn.disabled=false;
+    if(btn.textContent==='Generating...')btn.textContent='Generate Link';
+  }
 }
 
 async function genShareGist(){
   const tok=loadToken()||document.getElementById('gh-token-in').value.trim();
-  if(!tok){showErr('Enter your GitHub token in the Share section first.');document.getElementById('sh-btn').textContent='Generate Link';return;}
+  if(!tok){showErr('Enter your GitHub token in the Share section first.');return;}
   const payload=buildSharePayload();
   const selT=SCHEDULE.find(t=>t.id===state.tid);
   const body={
@@ -1813,24 +1818,23 @@ async function genShareGist(){
     public:false,
     files:{'pool.json':{content:JSON.stringify(payload)}}
   };
-  try{
-    let r,gistData;
-    if(currentGistId){
-      r=await fetch('https://api.github.com/gists/'+currentGistId,{method:'PATCH',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
-    }else{
-      r=await fetch('https://api.github.com/gists',{method:'POST',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
-    }
-    if(!r.ok){const err=await r.json();throw new Error(err.message||'GitHub API error '+r.status);}
-    gistData=await r.json();
-    currentGistId=gistData.id;
-    saveGistId(currentGistId,state.tid);
-    shareUrl=window.location.origin+window.location.pathname+'#gist:'+gistData.id;
-    updateShareDisplay();
-    copyToClipboard(shareUrl,()=>flashCopied());
-  }catch(e){
-    showErr('GitHub Gist error: '+e.message);
-    document.getElementById('sh-btn').textContent='Generate Link';
+  let r,gistData;
+  if(currentGistId){
+    r=await fetch('https://api.github.com/gists/'+currentGistId,{method:'PATCH',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
+  }else{
+    r=await fetch('https://api.github.com/gists',{method:'POST',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
   }
+  if(!r.ok){
+    let msg='GitHub API error '+r.status;
+    try{const err=await r.json();msg=err.message||msg;}catch(e){}
+    throw new Error(msg);
+  }
+  gistData=await r.json();
+  currentGistId=gistData.id;
+  saveGistId(currentGistId,state.tid);
+  shareUrl=window.location.origin+window.location.pathname+'#gist:'+gistData.id;
+  updateShareDisplay();
+  copyToClipboard(shareUrl,()=>flashCopied());
 }
 
 function genShareUrl(){
