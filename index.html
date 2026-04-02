@@ -316,6 +316,62 @@ body.light .ar-bar{background:#e8f5e8}
   .sh-row,.man-ac,.sa-ac{flex-wrap:wrap}
   .man-gr{grid-template-columns:1fr}
 }
+
+/* GIST SHARE */
+.sh-mode-toggle{display:flex;gap:4px;background:var(--bg);border-radius:7px;padding:3px;border:1px solid var(--bd);width:fit-content;margin-bottom:12px}
+.sh-mode-btn{padding:5px 12px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:5px;cursor:pointer;border:none;background:transparent;color:var(--mu)}
+.sh-mode-btn.on{background:var(--ac);color:#000}
+.gh-token-row{display:flex;gap:8px;margin-bottom:4px}
+.gh-token-in{flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;color:var(--tx);font-family:'Barlow',sans-serif;font-size:13px;outline:none}
+.gh-token-in:focus{border-color:var(--a2)}
+.gh-token-in::placeholder{color:var(--mu)}
+.gh-token-st{font-size:11px;margin-top:4px}
+.gh-token-st.ok{color:var(--gr)}.gh-token-st.err{color:var(--re)}
+.sh-warn.ok{color:var(--gr)}
+/* BULK ENTRY */
+.box-bk{background:var(--sf2);border:1px solid var(--a2)}
+.box-bk h3{color:var(--a2)}
+.bulk-in{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:9px 12px;color:var(--tx);font-family:'Barlow',sans-serif;font-size:13px;outline:none;resize:vertical;min-height:80px;display:block}
+.bulk-in:focus{border-color:var(--a2)}
+.bulk-in::placeholder{color:var(--mu)}
+.bulk-hint{font-size:11px;color:var(--mu);margin-top:6px;line-height:1.6}
+.bulk-hint b{color:var(--tx)}
+.bulk-st{font-size:12px;color:var(--mu);margin-top:6px}
+.bulk-st.ok{color:var(--gr)}.bulk-st.err{color:var(--re)}
+/* PICKS VALIDATION */
+.val-banner{background:#1a150a;border:1px solid var(--or);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--or);margin-bottom:16px;display:none}
+.val-banner strong{display:block;margin-bottom:4px;font-family:'Barlow Condensed',sans-serif;font-size:14px}
+/* PICKS SUMMARY TABLE */
+.ps-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ps-tbl{border-collapse:collapse;width:100%;min-width:400px}
+.ps-tbl th{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mu);padding:7px 10px;background:var(--bg);border-bottom:1px solid var(--bd);white-space:nowrap;text-align:left}
+.ps-tbl th.tier-hd{text-align:center;min-width:90px}
+.ps-tbl td{padding:6px 10px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:middle}
+.ps-tbl td.tier-cell{text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700}
+.ps-tbl td.name-cell{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;white-space:nowrap}
+.ps-tbl td.tb-cell{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--a2);white-space:nowrap;text-align:center}
+.ps-tbl tr:hover td{background:var(--sf2)}
+/* COPY FORM LISTS */
+.box-cf{background:var(--sf2);border:1px solid var(--gr)}
+.box-cf h3{color:var(--gr)}
+.cf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.cf-btn{background:var(--bg);border:1px solid var(--bd);border-radius:7px;padding:10px 12px;cursor:pointer;text-align:center;transition:all .2s;font-family:'Barlow Condensed',sans-serif}
+.cf-btn:hover{border-color:var(--gr);background:rgba(76,175,125,.06)}
+.cf-btn.copied{background:var(--gr);border-color:var(--gr)}
+.cf-tier-num{font-size:20px;font-weight:700;margin-bottom:2px}
+.cf-tier-lbl{font-size:11px;color:var(--mu);letter-spacing:.5px}
+.cf-btn.copied .cf-tier-lbl{color:#000}
+.cf-hint{font-size:12px;color:var(--mu);line-height:1.6}
+/* TIER IMPORT */
+.tier-import-section{border-top:1px solid var(--bd);padding-top:14px;margin-top:4px}
+/* SHOW PICKS IN TIERS */
+.tps-hdr{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--mu);margin-bottom:14px}
+/* ODDS BUTTON */
+.odds-btn{background:var(--sf2);color:var(--mu);border:1px solid var(--bd);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:6px;padding:6px 12px;cursor:pointer;transition:all .2s}
+.odds-btn:hover{border-color:var(--gr);color:var(--gr)}
+.odds-btn.on{background:var(--gr);color:#000;border-color:var(--gr)}
+.tier-view-odds{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gr);text-align:right;flex-shrink:0;min-width:52px}
+.tier-warn{background:#1a150a;border:1px solid var(--or);border-radius:7px;padding:8px 12px;font-size:12px;color:var(--or);margin-top:8px;display:none}
 </style>
 </head>
 <body>
@@ -422,6 +478,14 @@ body.light .ar-bar{background:#e8f5e8}
 
 <!-- TIERS PANEL -->
 <div class="panel" id="panel-tiers">
+  <div class="tier-view-sbar">
+    <div class="tier-view-info" id="tier-view-info"></div>
+    <div style="display:flex;gap:6px">
+      <button class="odds-btn" id="odds-btn" onclick="toggleOdds()" style="display:none">Show Odds</button>
+      <button class="odds-btn" id="picks-sum-btn" onclick="togglePicksSummary()" style="display:none">Show Picks</button>
+    </div>
+  </div>
+  <div id="tier-picks-summary" style="display:none;margin-bottom:20px;border-bottom:1px solid var(--bd);padding-bottom:20px"></div>
   <div id="tier-view-container"></div>
 </div>
 
@@ -464,17 +528,40 @@ body.light .ar-bar{background:#e8f5e8}
       <h3>📊 Player Tiers</h3>
       <p>Enter the 6 tiers for this tournament. Add player names and optional odds. Once saved, participant picks will use dropdowns from these lists. Hit <strong>Copy Tier List</strong> to paste into your group chat.</p>
       <div id="tier-warn" class="tier-warn"></div>
+      <div id="tier-warn" class="tier-warn"></div>
       <div class="tier-setup-grid" id="tier-setup-grid"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-sc btn-sm" onclick="clearTiers()">Clear Tiers</button>
-        <button class="btn btn-pr btn-sm" onclick="copyTierList()">📋 Copy Tier List</button>
+        <button class="btn btn-pr btn-sm" id="copy-tier-btn" onclick="copyTierList()">📋 Copy Tier List</button>
+        <button class="btn btn-sc btn-sm" onclick="toggleTierImport()">📂 Import from Excel</button>
+      </div>
+      <div id="tier-import-section" class="tier-import-section" style="display:none;border-top:1px solid var(--bd);padding-top:14px;margin-top:4px">
+        <p style="font-size:12px;color:var(--mu);margin-bottom:8px">Columns: <b>T1 Name</b> | <b>T1 Odds</b> | <b>T2 Name</b> | <b>T2 Odds</b> ... up to 12 columns. Odds optional. Header row auto-skipped.</p>
+        <textarea class="bulk-in" id="tier-import-ta" rows="4" placeholder="Paste Excel table here"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-pr btn-sm" onclick="importTiersFromExcel()">Import Tiers</button>
+          <button class="btn btn-sc btn-sm" onclick="document.getElementById('tier-import-ta').value=''">Clear</button>
+        </div>
+        <div class="bulk-st" id="tier-import-st" style="margin-top:6px"></div>
       </div>
     </div>
 
     <div class="box box-sh">
-      <h3>🔗 Share Leaderboard</h3>
-      <p>Generate a link with all picks pre-loaded. Anyone opens it on their phone and hits Refresh — no account needed. If over 4,000 characters, shorten at bit.ly before sharing.</p>
-      <div class="sh-row">
+      <h3>&#128279; Share Leaderboard</h3>
+      <p>Generate a link for participants. Use <strong>GitHub Gist</strong> for a short link that works for any pool size, or <strong>Direct URL</strong> for a self-contained link.</p>
+      <div class="sh-mode-toggle">
+        <button class="sh-mode-btn on" id="sh-mode-gist" onclick="setShareMode('gist')">GitHub Gist</button>
+        <button class="sh-mode-btn" id="sh-mode-url" onclick="setShareMode('url')">Direct URL</button>
+      </div>
+      <div id="sh-gist-section">
+        <p style="font-size:12px;color:var(--mu);margin-bottom:8px">Paste your GitHub personal access token with <strong>gist</strong> scope. <a href="https://github.com/settings/tokens/new?scopes=gist&description=Golf+Pool" target="_blank" style="color:var(--a2)">Create one here</a> (free, takes 2 mins).</p>
+        <div class="gh-token-row">
+          <input class="gh-token-in" id="gh-token-in" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" oninput="onTokenChange()">
+          <button class="btn btn-sc btn-sm" onclick="testToken()">Test</button>
+        </div>
+        <div class="gh-token-st" id="gh-token-st"></div>
+      </div>
+      <div class="sh-row" style="margin-top:12px">
         <div class="sh-url" id="sh-url" onclick="copyShare()">Click 'Generate Link' to create a shareable URL</div>
         <button class="btn btn-sh btn-sm" id="sh-btn" onclick="genShare()">Generate Link</button>
       </div>
@@ -507,6 +594,46 @@ body.light .ar-bar{background:#e8f5e8}
       </div>
     </div>
 
+    <!-- TIER IMPORT -->
+    <div id="tier-import-section" class="tier-import-section" style="display:none">
+      <p style="font-size:12px;color:var(--mu);margin-bottom:8px">
+        Columns: <b>T1 Name</b> | <b>T1 Odds</b> | <b>T2 Name</b> | <b>T2 Odds</b> ... <b>T6 Name</b> | <b>T6 Odds</b> (odds optional). Header row auto-skipped.
+      </p>
+      <textarea class="bulk-in" id="tier-import-ta" rows="4" placeholder="Paste Excel table here"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-pr btn-sm" onclick="importTiersFromExcel()">Import Tiers</button>
+        <button class="btn btn-sc btn-sm" onclick="document.getElementById('tier-import-ta').value=''">Clear</button>
+      </div>
+      <div class="bulk-st" id="tier-import-st" style="margin-top:6px"></div>
+    </div>
+
+    <!-- VALIDATION BANNER -->
+    <div class="val-banner" id="val-banner">
+      <strong>&#9888;&#65039; Pick validation warnings</strong>
+      <div id="val-details"></div>
+    </div>
+
+    <!-- BULK PARTICIPANT ENTRY -->
+    <div class="box box-bk">
+      <h3>&#9889; Bulk Pick Entry</h3>
+      <p>Paste rows from Excel or Google Sheets &#8212; one participant per row. Or type a single row and click Import.</p>
+      <textarea class="bulk-in" id="bulk-in" rows="4" placeholder="Paste table here&#10;Name [tab] T1 pick [tab] T2 [tab] T3 [tab] T4 [tab] T5 [tab] T6 [tab] Tiebreaker"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <button class="btn btn-sc btn-sm" onclick="addBulk()">Import All Rows</button>
+        <button class="btn btn-dn btn-sm" onclick="document.getElementById('bulk-in').value='';document.getElementById('bulk-st').textContent=''">Clear</button>
+      </div>
+      <div class="bulk-hint" style="margin-top:8px">Column order: <b>Name</b> &nbsp;&#9;&nbsp; <b>T1 pick</b> &nbsp;&#9;&nbsp; <b>T2</b> &nbsp;&#9;&nbsp; <b>T3</b> &nbsp;&#9;&nbsp; <b>T4</b> &nbsp;&#9;&nbsp; <b>T5</b> &nbsp;&#9;&nbsp; <b>T6</b> &nbsp;&#9;&nbsp; <b>Tiebreaker</b><br>Header row auto-detected and skipped. Existing participants updated if name matches.</div>
+      <div class="bulk-st" id="bulk-st"></div>
+    </div>
+
+    <!-- COPY GOOGLE FORM LISTS -->
+    <div class="box box-cf">
+      <h3>&#128221; Copy Google Form Player Lists</h3>
+      <p>Click each tier button to copy that tier's player names for pasting into a Google Form dropdown.</p>
+      <div class="cf-grid" id="cf-grid"></div>
+      <div class="cf-hint" id="cf-hint">Fill in the Player Tiers section above to enable these buttons.</div>
+    </div>
+
     <div class="pl" id="parts-list"></div>
 
     <div class="sa-ac">
@@ -528,7 +655,7 @@ const TC=["#c9a84c","#9ba8b8","#a0714a","#4c9ac9","#7a6eb0","#5a7e5a"];
 
 const SCHEDULE=[
   {id:"valspar-2026",    name:"Valspar Championship",              date:"Mar 19-23, 2026",  espnId:"401703509"},
-  {id:"houston-2026",    name:"Texas Children's Houston Open",      date:"Mar 26-29, 2026",  espnId:"401703510"},
+  {id:"houston-2026",    name:"Texas Children's Houston Open",      date:"Mar 26-29, 2026",  espnId:"401811939"},
   {id:"valero-2026",     name:"Valero Texas Open",                  date:"Apr 2-5, 2026",    espnId:"401811940"},
   {id:"masters-2026",    name:"Masters Tournament",                 date:"Apr 9-12, 2026",   espnId:"401703512"},
   {id:"rbc-2026",        name:"RBC Heritage",                       date:"Apr 16-19, 2026",  espnId:"401703513"},
@@ -567,7 +694,8 @@ let state={
   nextId:3, scores:{}, prevScores:{}, meta:null, lastRefresh:null,
   aws:'', tid:'', scoreSource:null, poolHist:{}, darkMode:true, poolName:'The Pool',
   tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''}))),
-  tiersTourn:''
+  tiersTourn:'',
+  shareMode:'gist'
 };
 let isViewOnly=false;
 let shareUrl=null;
@@ -583,6 +711,10 @@ function save(){
   if(isViewOnly)return;
   try{localStorage.setItem('pgaPool8',JSON.stringify(state));}catch(e){}
 }
+function saveToken(tok){try{if(tok)localStorage.setItem('ghToken',tok);else localStorage.removeItem('ghToken');}catch(e){}}
+function loadToken(){try{return localStorage.getItem('ghToken')||'';}catch(e){return '';}}
+function saveGistId(id,tid){try{if(id)localStorage.setItem('gistId_'+tid,id);}catch(e){}}
+function loadGistId(tid){try{return localStorage.getItem('gistId_'+tid)||null;}catch(e){return null;}}
 
 function loadSaved(){
   try{
@@ -810,6 +942,8 @@ async function doRefresh(){
     renderLb();
     updateStatusBar();
     updateTournBanner();
+    checkTierFieldValidation(null,null);
+    autoSaveGist();
   }catch(e){
     showErr('ESPN API failed: '+e.message+'. Use Manual entry as fallback.');
     document.getElementById('man-pan').classList.add('on');
@@ -895,17 +1029,10 @@ function changeArMins(){
 }
 
 // \u2500\u2500 SHARE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function genShare(){
-  if(!state.tid){showErr('Select a tournament first.');return;}
-  const hash=encodeHash();
-  if(!hash){showErr('Failed to encode pool data.');return;}
-  shareUrl=window.location.origin+window.location.pathname+'#'+hash;
-  updateShareDisplay();
-  if(navigator.clipboard)navigator.clipboard.writeText(shareUrl).then(()=>flashCopied());
-}
+// genShare and copyShare replaced by Gist versions above
 function copyShare(){
   if(!shareUrl)return;
-  if(navigator.clipboard)navigator.clipboard.writeText(shareUrl).then(()=>flashCopied());
+  copyToClipboard(shareUrl,()=>flashCopied());
 }
 function flashCopied(){
   const el=document.getElementById('sh-url');
@@ -924,15 +1051,17 @@ function updateShareDisplay(){
   const el=document.getElementById('sh-url');
   const warn=document.getElementById('sh-warn');
   const btn=document.getElementById('sh-btn');
+  if(!btn)return;
   if(shareUrl){
     el.textContent=shareUrl;
     btn.textContent='Copy Again';
-    if(shareUrl.length>4000){warn.textContent='\u26A0\uFE0F Long URL ('+shareUrl.length+' chars) \u2014 shorten at bit.ly.';warn.className='sh-warn wn';}
+    if(shareMode==='gist'){warn.textContent='\u2713 Short link ready \u2014 works for any pool size.';warn.className='sh-warn ok';}
+    else if(shareUrl.length>4000){warn.textContent='\u26A0\uFE0F Long URL ('+shareUrl.length+' chars) \u2014 shorten at bit.ly.';warn.className='sh-warn wn';}
     else{warn.textContent='\u2713 Ready to share ('+shareUrl.length+' chars)';warn.className='sh-warn';}
   }else{
     el.textContent="Click 'Generate Link' to create a shareable URL";
     btn.textContent='Generate Link';
-    warn.textContent=!state.tid?'\u26A0\uFE0F Select a tournament first.':'All picks and tournament will be encoded in the link.';
+    warn.textContent=!state.tid?'\u26A0\uFE0F Select a tournament first.':shareMode==='gist'?'Add your GitHub token above, then click Generate Link.':'All picks will be encoded in the link.';
     warn.className='sh-warn';
   }
 }
@@ -1119,10 +1248,11 @@ function renderTierSetup(){
 function onTierNameInput(ti,pi,val){
   state.tiers[ti][pi].name=val;
   shareUrl=null;save();
-  // Check if any existing picks are no longer in tiers
   checkTierPickMismatch();
   renderParticipants();
   renderTierView();
+  renderCopyFormLists();
+  validatePicks();
 }
 
 function checkTierPickMismatch(){
@@ -1146,40 +1276,41 @@ function checkTierPickMismatch(){
 function renderTierView(){
   const container=document.getElementById('tier-view-container');
   if(!container)return;
+  const infoEl=document.getElementById('tier-view-info');
+  const oddsBtn=document.getElementById('odds-btn');
+  const psBtn=document.getElementById('picks-sum-btn');
   if(!hasTiers()){
-    container.innerHTML='<div class="tier-empty"><div style="font-size:40px;margin-bottom:12px">\u1F4CA</div><div>No tiers set yet.<br>The admin sets tiers in the Setup tab before each tournament.</div></div>';
+    if(infoEl)infoEl.innerHTML='';
+    if(oddsBtn)oddsBtn.style.display='none';
+    if(psBtn)psBtn.style.display='none';
+    container.innerHTML='<div class="tier-empty"><div style="font-size:40px;margin-bottom:12px">&#128202;</div><div>No tiers set yet.<br>The admin sets tiers in the Setup tab before each tournament.</div></div>';
     return;
   }
+  const hasOddsData=state.tiers.some(t=>t.some(p=>p.odds&&p.odds.trim()));
+  const totalPlayers=state.tiers.reduce((s,t)=>s+t.filter(p=>p.name.trim()).length,0);
   const tourn=state.tiersTourn||SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'';
-  let html='';
-  if(tourn)html+='<div style="font-family:'+"'Barlow Condensed'"+',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--mu);padding:0 0 16px">'+escH(tourn)+'</div>';
-  html+='<div class="tier-view-grid">';
+  if(infoEl)infoEl.innerHTML=(tourn?'<b>'+escH(tourn)+'</b> \u00B7 ':'')+totalPlayers+' players across 6 tiers';
+  if(oddsBtn){oddsBtn.style.display=hasOddsData?'':'none';oddsBtn.textContent=showOdds?'Hide Odds':'Show Odds';oddsBtn.classList.toggle('on',showOdds);}
+  const hasParts=state.participants.filter(p=>p.name.trim()).length>0;
+  if(psBtn){psBtn.style.display=hasParts?'':'none';psBtn.textContent=showPicksSumInTiers?'Hide Picks':'Show Picks';psBtn.classList.toggle('on',showPicksSumInTiers);}
+  if(showPicksSumInTiers){const psc=document.getElementById('tier-picks-summary');if(psc){psc.style.display='block';renderPicksSummaryInTiers(psc);}}
+  let html='<div class="tier-view-grid">';
   state.tiers.forEach((t,ti)=>{
     const isLast=ti===PICKS-1;
     const col=TC[ti]||'#5a6a7e';
     const players=t.filter(p=>p.name.trim());
     let rowsHtml='';
     players.forEach((p,pi)=>{
-      rowsHtml+=`<div class="tier-view-row">
-        <span class="tier-view-n">${ti*TIER_SIZE+pi+1}</span>
-        <span class="tier-view-name">${escH(p.name.trim())}</span>
-      </div>`;
+      const oddsHtml=showOdds&&p.odds&&p.odds.trim()?'<span class="tier-view-odds">'+escH(p.odds.trim())+'</span>':'';
+      rowsHtml+='<div class="tier-view-row"><span class="tier-view-n">'+(ti*TIER_SIZE+pi+1)+'</span><span class="tier-view-name">'+escH(p.name.trim())+'</span>'+oddsHtml+'</div>';
     });
     if(!players.length)rowsHtml='<div style="padding:8px 14px;font-size:12px;color:var(--mu)">Not filled in yet</div>';
-    const wcHtml=isLast?`<div class="tier-view-wc"><span class="tier-view-wc-lbl">\u1F0CF Wild Card</span><span class="tier-view-wc-note">Any player in field</span></div>`:'';
-    html+=`<div class="tier-view-card">
-      <div class="tier-view-hd" style="border-top:3px solid ${col}">
-        <span class="tier-view-num" style="color:${col}">T${ti+1}</span>
-        <span class="tier-view-lbl">Tier ${ti+1}${isLast?' + Wild Card':''}</span>
-      </div>
-      <div class="tier-view-list">${rowsHtml}${wcHtml}</div>
-    </div>`;
+    const wcHtml=isLast?'<div class="tier-view-wc"><span class="tier-view-wc-lbl">&#127823; Wild Card</span><span class="tier-view-wc-note">Any player in field</span></div>':'';
+    html+='<div class="tier-view-card"><div class="tier-view-hd" style="border-top:3px solid '+col+'"><span class="tier-view-num" style="color:'+col+'">T'+(ti+1)+'</span><span class="tier-view-lbl">Tier '+(ti+1)+(isLast?' + Wild Card':'')+'</span></div><div class="tier-view-list">'+rowsHtml+wcHtml+'</div></div>';
   });
   html+='</div>';
   container.innerHTML=html;
 }
-
-// \u2500\u2500 PARTICIPANTS SETUP \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function addPart(){
   state.participants.push({id:state.nextId++,name:'',picks:Array(PICKS).fill(''),tiebreaker:''});
   shareUrl=null;save();renderParticipants();
@@ -1479,6 +1610,7 @@ async function refreshTournLb(){
     const result=await fetchESPN(selT.espnId);
     tournLbData=result;
     renderTournLb();
+    checkTierFieldValidation(null,null);
   }catch(e){
     document.getElementById('tourn-lb-container').innerHTML='<div class="empty"><div class="empty-ic">\u26A0\uFE0F</div><div>Could not load tournament data: '+escH(e.message)+'</div></div>';
   }
@@ -1505,6 +1637,13 @@ function renderTournLb(){
   // Show highlight button, build pick name set for highlighting
   const hlBtn=document.getElementById('hl-btn');
   if(hlBtn)hlBtn.style.display='';
+  const crBtn=document.getElementById('cut-risk-btn');
+  if(crBtn){
+    const isR2=tournLbData.projCut!==null||(tournLbData.roundNum===2);
+    crBtn.style.display=isR2?'':'none';
+    crBtn.textContent=showCutRisk?'Cut Risk: On':'Cut Risk: Off';
+    crBtn.classList.toggle('hl-on',showCutRisk);
+  }
   const pickNames=new Set(state.participants.flatMap(p=>p.picks.map(pk=>pk.trim().toLowerCase())).filter(Boolean));
 
   // Sort: active by score, then cuts/wd/dq at bottom
@@ -1620,6 +1759,384 @@ function resetAll(){
 }
 
 // \u2500\u2500 INIT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// \u2500\u2500 GIST SHARE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+let shareMode='gist';
+let currentGistId=null;
+
+function setShareMode(mode){
+  shareMode=mode;
+  state.shareMode=mode;
+  save();
+  document.getElementById('sh-mode-gist').classList.toggle('on',mode==='gist');
+  document.getElementById('sh-mode-url').classList.toggle('on',mode==='url');
+  document.getElementById('sh-gist-section').style.display=mode==='gist'?'':'none';
+  shareUrl=null;
+  updateShareDisplay();
+}
+
+function onTokenChange(){
+  const tok=document.getElementById('gh-token-in').value.trim();
+  saveToken(tok);
+  const st=document.getElementById('gh-token-st');
+  if(st){st.textContent='';st.className='gh-token-st';}
+}
+
+async function testToken(){
+  const tok=loadToken()||document.getElementById('gh-token-in').value.trim();
+  const st=document.getElementById('gh-token-st');
+  if(!tok){if(st){st.textContent='Enter a token first.';st.className='gh-token-st err';}return;}
+  if(st){st.textContent='Testing...';st.className='gh-token-st';}
+  try{
+    const r=await fetch('https://api.github.com/user',{headers:{Authorization:'token '+tok,'User-Agent':'GolfPool'}});
+    if(r.ok){const u=await r.json();if(st){st.textContent='\u2713 Connected as @'+u.login;st.className='gh-token-st ok';}}
+    else{if(st){st.textContent='\u26A0 Invalid token ('+r.status+')';st.className='gh-token-st err';}}
+  }catch(e){if(st){st.textContent='\u26A0 Network error';st.className='gh-token-st err';}}
+}
+
+async function genShare(){
+  if(!state.tid){showErr('Select a tournament first.');return;}
+  const btn=document.getElementById('sh-btn');
+  btn.textContent='Generating...';btn.disabled=true;
+  try{
+    if(shareMode==='gist'){await genShareGist();}
+    else{genShareUrl();}
+  }finally{btn.disabled=false;}
+}
+
+async function genShareGist(){
+  const tok=loadToken()||document.getElementById('gh-token-in').value.trim();
+  if(!tok){showErr('Enter your GitHub token in the Share section first.');document.getElementById('sh-btn').textContent='Generate Link';return;}
+  const payload=buildSharePayload();
+  const selT=SCHEDULE.find(t=>t.id===state.tid);
+  const body={
+    description:'Golf Pool \u2014 '+(state.poolName||'The Pool')+' \u2014 '+(selT?selT.name:state.tid),
+    public:false,
+    files:{'pool.json':{content:JSON.stringify(payload)}}
+  };
+  try{
+    let r,gistData;
+    if(currentGistId){
+      r=await fetch('https://api.github.com/gists/'+currentGistId,{method:'PATCH',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
+    }else{
+      r=await fetch('https://api.github.com/gists',{method:'POST',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
+    }
+    if(!r.ok){const err=await r.json();throw new Error(err.message||'GitHub API error '+r.status);}
+    gistData=await r.json();
+    currentGistId=gistData.id;
+    saveGistId(currentGistId,state.tid);
+    shareUrl=window.location.origin+window.location.pathname+'#gist:'+gistData.id;
+    updateShareDisplay();
+    copyToClipboard(shareUrl,()=>flashCopied());
+  }catch(e){
+    showErr('GitHub Gist error: '+e.message);
+    document.getElementById('sh-btn').textContent='Generate Link';
+  }
+}
+
+function genShareUrl(){
+  const hash=encodeHash();
+  if(!hash){showErr('Failed to encode pool data.');document.getElementById('sh-btn').textContent='Generate Link';return;}
+  shareUrl=window.location.origin+window.location.pathname+'#'+hash;
+  updateShareDisplay();
+  copyToClipboard(shareUrl,()=>flashCopied());
+}
+
+function copyToClipboard(text,cb){
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(text).then(cb).catch(()=>{fallbackCopy(text);cb();});
+  }else{fallbackCopy(text);cb();}
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');ta.value=text;
+  document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+}
+
+async function autoSaveGist(){
+  if(isViewOnly)return;
+  if(shareMode!=='gist')return;
+  if(!currentGistId)return;
+  const tok=loadToken();
+  if(!tok)return;
+  try{
+    const payload=buildSharePayload();
+    const r=await fetch('https://api.github.com/gists/'+currentGistId,{
+      method:'PATCH',
+      headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},
+      body:JSON.stringify({files:{'pool.json':{content:JSON.stringify(payload)}}})
+    });
+    if(r.ok){
+      const si=document.getElementById('si');
+      if(si){const prev=si.innerHTML;si.innerHTML+=' \u00B7 <span style="color:var(--gr)">\u2713 Link updated</span>';setTimeout(()=>{si.innerHTML=prev;},3000);}
+    }
+  }catch(e){console.log('Auto-save Gist failed:',e.message);}
+}
+
+function loadFromPayload(payload){
+  state.participants=payload.p.map((p,i)=>({
+    id:i+1,name:p.n,tiebreaker:p.t||'',
+    picks:[...(p.pk||[]),...Array(PICKS).fill('')].slice(0,PICKS)
+  }));
+  state.aws=payload.aws||'';
+  state.tid=payload.tid||'';
+  state.poolName=payload.pn||'The Pool';
+  if(payload.ti&&Array.isArray(payload.ti)){
+    state.tiers=payload.ti.map((t,ti2)=>{
+      const sz=ti2===PICKS-1?TIER_SIZE-1:TIER_SIZE;
+      const arr=Array.from({length:sz},()=>({name:'',odds:''}));
+      (t||[]).forEach((nm,i)=>{if(i<sz)arr[i]={name:nm||'',odds:''};});
+      return arr;
+    });
+    while(state.tiers.length<PICKS)state.tiers.push(Array.from({length:PICKS-1},()=>({name:'',odds:''})));
+  }
+  if(payload.scores&&typeof payload.scores==='object'){state.scores=payload.scores;state.scoreSource='espn';}
+  if(payload.meta&&typeof payload.meta==='object'){state.meta=payload.meta;state.lastRefresh=payload.meta.lastRefresh||null;}
+}
+
+// \u2500\u2500 BULK PARTICIPANT IMPORT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function parseBulkRow(cols){
+  const name=(cols[0]||'').trim();
+  if(!name)return null;
+  const picks=[];
+  for(let i=0;i<PICKS;i++)picks.push((cols[1+i]||'').trim());
+  const tbRaw=(cols[1+PICKS]||'').trim().replace(/[^0-9\-+]/g,'');
+  const tiebreaker=tbRaw!==''&&!isNaN(Number(tbRaw))?tbRaw:'';
+  return{name,picks,tiebreaker};
+}
+function isHeaderRow(cols){
+  const first=(cols[0]||'').trim().toLowerCase();
+  return['name','participant','player','person','entry'].includes(first);
+}
+function addBulk(){
+  const inp=document.getElementById('bulk-in');
+  const st=document.getElementById('bulk-st');
+  if(!inp)return;
+  const raw=inp.value;
+  if(!raw.trim()){if(st){st.textContent='Nothing to import.';st.className='bulk-st err';}return;}
+  const lines=raw.split('\n').map(l=>l.replace(/\r$/,'')).filter(l=>l.trim());
+  let added=0,updated=0,skipped=0;
+  lines.forEach((line,idx)=>{
+    const cols=line.split('\t');
+    if(idx===0&&isHeaderRow(cols))return;
+    const parsed=parseBulkRow(cols);
+    if(!parsed){skipped++;return;}
+    const existing=state.participants.find(p=>p.name.trim().toLowerCase()===parsed.name.toLowerCase());
+    if(existing){
+      existing.tiebreaker=parsed.tiebreaker;
+      existing.picks=[...parsed.picks,...Array(PICKS).fill('')].slice(0,PICKS);
+      updated++;
+    }else{
+      state.participants.push({id:state.nextId++,name:parsed.name,tiebreaker:parsed.tiebreaker,picks:[...parsed.picks,...Array(PICKS).fill('')].slice(0,PICKS)});
+      added++;
+    }
+  });
+  if(added===0&&updated===0){if(st){st.textContent='No valid rows found. Check column order.';st.className='bulk-st err';}return;}
+  const parts=[];
+  if(added)parts.push(added+' added');
+  if(updated)parts.push(updated+' updated');
+  if(skipped)parts.push(skipped+' skipped');
+  if(st){st.textContent='\u2713 '+parts.join(', ')+'.';st.className='bulk-st ok';}
+  shareUrl=null;save();renderParticipants();
+}
+
+// \u2500\u2500 TIER EXCEL IMPORT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function toggleTierImport(){
+  const sec=document.getElementById('tier-import-section');
+  if(sec)sec.style.display=sec.style.display==='none'?'':'none';
+}
+function importTiersFromExcel(){
+  const ta=document.getElementById('tier-import-ta');
+  const st=document.getElementById('tier-import-st');
+  if(!ta)return;
+  const raw=ta.value.trim();
+  if(!raw){if(st){st.textContent='Nothing to import.';st.className='bulk-st err';}return;}
+  const lines=raw.split('\n').map(l=>l.replace(/\r$/,''));
+  let startRow=0;
+  const firstCols=(lines[0]||'').split('\t');
+  const firstCell=(firstCols[0]||'').trim().toLowerCase();
+  if(firstCell===''||firstCell.startsWith('t1')||firstCell.startsWith('tier')||firstCell==='name'||firstCell==='player')startRow=1;
+  const newTiers=Array.from({length:PICKS},(_,ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
+  const dataRows=lines.slice(startRow).filter(l=>l.trim());
+  const hasOddsCols=dataRows.length>0&&dataRows[0].split('\t').length>PICKS;
+  const tierCounts=Array(PICKS).fill(0);
+  let total=0;
+  dataRows.forEach(line=>{
+    const cols=line.split('\t');
+    for(let ti=0;ti<PICKS;ti++){
+      const maxP=ti===PICKS-1?TIER_SIZE-1:TIER_SIZE;
+      if(tierCounts[ti]>=maxP)continue;
+      const nameIdx=hasOddsCols?ti*2:ti;
+      const oddsIdx=hasOddsCols?ti*2+1:-1;
+      const nm=(cols[nameIdx]||'').trim();
+      if(!nm)continue;
+      const odds=oddsIdx>=0?(cols[oddsIdx]||'').trim():'';
+      newTiers[ti][tierCounts[ti]]={name:nm,odds};
+      tierCounts[ti]++;total++;
+    }
+  });
+  if(total===0){if(st){st.textContent='No players found. Check column order.';st.className='bulk-st err';}return;}
+  state.tiers=newTiers;
+  state.tiersTourn=SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'';
+  shareUrl=null;save();renderTierSetup();renderTierView();renderCopyFormLists();validatePicks();checkTierPickMismatch();
+  if(st){st.textContent='\u2713 Imported '+total+' players: '+tierCounts.map((n,ti)=>n+' in T'+(ti+1)).join(', ');st.className='bulk-st ok';}
+}
+
+// \u2500\u2500 PICKS VALIDATION \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function validatePicks(){
+  const ban=document.getElementById('val-banner');
+  const det=document.getElementById('val-details');
+  if(!ban||!det)return;
+  if(!hasTiers()){ban.style.display='none';return;}
+  const issues=[];
+  state.participants.filter(p=>p.name.trim()).forEach(p=>{
+    p.picks.forEach((pk,ti)=>{
+      const nm=pk.trim();
+      if(!nm)return;
+      if(nm==='Wild Card'&&ti===PICKS-1)return;
+      const tierPlayers=getTierPlayers(ti).map(n=>n.toLowerCase());
+      if(!tierPlayers.includes(nm.toLowerCase()))issues.push(escH(p.name)+': <b>'+escH(nm)+'</b> not in Tier '+(ti+1));
+    });
+  });
+  if(issues.length){det.innerHTML=issues.join('<br>');ban.style.display='block';}
+  else ban.style.display='none';
+}
+
+// \u2500\u2500 TIER FIELD VALIDATION \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function checkTierPickMismatch(){
+  if(!hasTiers())return;
+  const mismatches=[];
+  state.participants.filter(p=>p.name.trim()).forEach(p=>{
+    p.picks.forEach((pick,ti)=>{
+      const nm=pick.trim();if(!nm)return;
+      const tierNames=getTierPlayers(ti).map(n=>n.toLowerCase());
+      if(!tierNames.includes(nm.toLowerCase()))mismatches.push(p.name+': "'+nm+'" (T'+(ti+1)+')');
+    });
+  });
+  checkTierFieldValidation(null,mismatches.length>0?mismatches:null);
+}
+function checkTierFieldValidation(warnEl,existingMismatches){
+  const warn=warnEl||document.getElementById('tier-warn');
+  if(!warn)return;
+  if(!hasTiers()){warn.style.display='none';return;}
+  const parts=[];
+  if(existingMismatches&&existingMismatches.length)parts.push('<strong>\u26A0\uFE0F Pick mismatches:</strong> '+existingMismatches.join(', '));
+  const fullField=tournLbData&&tournLbData.players&&tournLbData.players.length?tournLbData.players:null;
+  if(fullField){
+    const espnNames=fullField.map(p=>normName(p.name));
+    const notInField=[];
+    state.tiers.forEach((t,ti)=>{
+      t.forEach(p=>{
+        const nm=p.name.trim();if(!nm)return;
+        const a=normName(nm);
+        const aw=a.split(/\s+/);
+        const found=espnNames.some(b=>{
+          if(a===b)return true;
+          const bw=b.split(/\s+/);
+          const shared=aw.filter(w=>bw.includes(w));
+          const sim=shared.length/Math.max(aw.length,bw.length);
+          if(shared.length===1&&(aw.length>1||bw.length>1)){
+            const lastA=aw[aw.length-1],lastB=bw[bw.length-1],firstA=aw[0],firstB=bw[0];
+            if((lastA===lastB&&firstA!==firstB)||lastA!==lastB)return sim*0.4>=0.5;
+          }
+          return sim>=0.5;
+        });
+        if(!found)notInField.push('T'+(ti+1)+': '+nm);
+      });
+    });
+    if(notInField.length)parts.push('<strong>\u26A0\uFE0F Not in ESPN field ('+notInField.length+'):</strong> '+notInField.join(', '));
+  }
+  if(parts.length){warn.innerHTML=parts.join('<br>');warn.style.display='block';}
+  else warn.style.display='none';
+}
+
+// \u2500\u2500 COPY GOOGLE FORM LISTS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function renderCopyFormLists(){
+  const grid=document.getElementById('cf-grid');
+  const hint=document.getElementById('cf-hint');
+  if(!grid)return;
+  if(!hasTiers()){grid.innerHTML='';if(hint)hint.textContent='Fill in the Player Tiers section above to enable these buttons.';return;}
+  if(hint)hint.textContent='Click a tier button to copy that tier\'s player names \u2014 paste into a Google Form dropdown.';
+  grid.innerHTML='';
+  state.tiers.forEach((t,ti)=>{
+    const isLast=ti===PICKS-1;
+    const players=t.filter(p=>p.name.trim()).map(p=>p.name.trim());
+    const col=TC[ti]||'#5a6a7e';
+    const btn=document.createElement('button');
+    btn.className='cf-btn';
+    btn.style.borderColor=col+'44';
+    btn.innerHTML='<div class="cf-tier-num" style="color:'+col+'">T'+(ti+1)+'</div>'+
+      '<div class="cf-tier-lbl">'+players.length+(isLast?' players + WC':' players')+'</div>';
+    btn.onclick=()=>{
+      const list=[...players];if(isLast)list.push('Wild Card');
+      const txt=list.join('\n');
+      copyToClipboard(txt,()=>{
+        btn.classList.add('copied');btn.querySelector('.cf-tier-lbl').textContent='Copied!';btn.style.borderColor=col;
+        setTimeout(()=>{btn.classList.remove('copied');btn.querySelector('.cf-tier-lbl').textContent=players.length+(isLast?' players + WC':' players');btn.style.borderColor=col+'44';},2000);
+      });
+    };
+    grid.appendChild(btn);
+  });
+}
+
+// \u2500\u2500 PICKS SUMMARY IN TIERS TAB \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+let showPicksSumInTiers=false;
+function togglePicksSummary(){
+  showPicksSumInTiers=!showPicksSumInTiers;
+  const btn=document.getElementById('picks-sum-btn');
+  if(btn){btn.textContent=showPicksSumInTiers?'Hide Picks':'Show Picks';btn.classList.toggle('on',showPicksSumInTiers);}
+  const container=document.getElementById('tier-picks-summary');
+  if(!container)return;
+  if(!showPicksSumInTiers){container.style.display='none';return;}
+  container.style.display='block';
+  renderPicksSummaryInTiers(container);
+}
+function renderPicksSummaryInTiers(container){
+  const parts=state.participants.filter(p=>p.name.trim());
+  if(!parts.length){container.innerHTML='<div style="font-size:13px;color:var(--mu)">No participants yet.</div>';return;}
+  let html='<div class="tps-hdr">Pool Picks</div>';
+  html+='<div class="ps-tbl-wrap"><table class="ps-tbl"><thead><tr><th>Participant</th>';
+  for(let i=0;i<PICKS;i++)html+='<th class="tier-hd" style="border-top:3px solid '+TC[i]+'">T'+(i+1)+(i===PICKS-1?' / WC':'')+'</th>';
+  html+='<th class="tier-hd" style="border-top:3px solid var(--a2)">TB</th></tr></thead><tbody>';
+  parts.forEach(p=>{
+    html+='<tr><td class="name-cell">'+escH(p.name)+'</td>';
+    p.picks.forEach(pk=>{html+='<td class="tier-cell">'+escH(pk.trim()||'\u2014')+'</td>';});
+    html+='<td class="tb-cell">'+(p.tiebreaker!==''&&p.tiebreaker!==undefined?fmtS(Number(p.tiebreaker)):'-')+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  container.innerHTML=html;
+}
+
+// \u2500\u2500 ODDS TOGGLE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+let showOdds=false;
+let showCutRisk=false;
+function toggleOdds(){
+  showOdds=!showOdds;
+  const btn=document.getElementById('odds-btn');
+  if(btn){btn.textContent=showOdds?'Hide Odds':'Show Odds';btn.classList.toggle('on',showOdds);}
+  renderTierView();
+}
+function toggleCutRisk(){
+  showCutRisk=!showCutRisk;
+  const btn=document.getElementById('cut-risk-btn');
+  if(btn){btn.textContent=showCutRisk?'Cut Risk: On':'Cut Risk: Off';btn.classList.toggle('hl-on',showCutRisk);}
+  renderTournLb();
+}
+
+// \u2500\u2500 UPDATE STATUS BAR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function updateStatusBar(){
+  const allNames=getAllNames();
+  const elim=buildRows().filter(r=>r.eliminated);
+  const hasScores=Object.keys(state.scores||{}).length>0;
+  let html;
+  if(state.lastRefresh&&state.lastRefresh!=='auto'){html='Last updated: <b>'+state.lastRefresh+'</b>';}
+  else if(hasScores){html='Scores loaded';}
+  else{html='No scores loaded yet';}
+  if(state.meta)html+=' \u00B7 <b>'+allNames.length+'</b> golfers tracked';
+  if(elim.length)html+=' \u00B7 <span style="color:var(--re)"><b>'+elim.length+'</b> eliminated</span>';
+  document.getElementById('si').innerHTML=html;
+}
+
+
 function init(){
   applyDark();
   updateHeaderTitle();
@@ -1637,6 +2154,21 @@ function init(){
   renderLb();
   renderTierSetup();
   renderTierView();
+  validatePicks();
+  renderCopyFormLists();
+  // Load GitHub token and share mode
+  const tokEl=document.getElementById('gh-token-in');
+  if(tokEl)tokEl.value=loadToken()||'';
+  const savedMode=state.shareMode||'gist';
+  shareMode=savedMode;
+  const gmGist=document.getElementById('sh-mode-gist');
+  const gmUrl=document.getElementById('sh-mode-url');
+  const gSection=document.getElementById('sh-gist-section');
+  if(gmGist)gmGist.classList.toggle('on',savedMode==='gist');
+  if(gmUrl)gmUrl.classList.toggle('on',savedMode==='url');
+  if(gSection)gSection.style.display=savedMode==='gist'?'':'none';
+  // Restore gist ID for current tournament
+  if(state.tid&&!currentGistId)currentGistId=loadGistId(state.tid);
   if(isViewOnly){
     document.getElementById('tab-setup').style.display='none';
     document.getElementById('man-tog').style.display='none';
@@ -1647,18 +2179,32 @@ function init(){
 }
 
 // Detect shared link or load saved state
-const hashData=decodeHash(window.location.hash);
-if(hashData){
+const _rawHash=window.location.hash;
+const _rawHashVal=_rawHash.startsWith('#')?_rawHash.slice(1):'';
+if(_rawHashVal.startsWith('gist:')){
   isViewOnly=true;
-  state.participants=hashData.participants;
-  state.aws=hashData.aws||'';
-  state.tid=hashData.tid||'';
-  if(hashData.tiers)state.tiers=hashData.tiers;
-  if(hashData.poolName)state.poolName=hashData.poolName;
-}else{
+  const _gistId=_rawHashVal.slice(5);
   loadSaved();
+  init();
+  fetch('https://api.github.com/gists/'+_gistId,{headers:{'User-Agent':'GolfPool'}})
+    .then(r=>{if(!r.ok)throw new Error('Gist not found ('+r.status+')');return r.json();})
+    .then(gd=>{
+      const content=gd.files&&gd.files['pool.json']&&gd.files['pool.json'].content;
+      if(!content)throw new Error('pool.json not found in gist');
+      loadFromPayload(JSON.parse(content));
+      init();
+    })
+    .catch(e=>{showErr('Could not load pool data: '+e.message);});
+}else{
+  const hashData=decodeHash(_rawHash);
+  if(hashData){
+    isViewOnly=true;
+    loadFromPayload(hashData);
+  }else{
+    loadSaved();
+  }
+  init();
 }
-init();
 </script>
 </body>
 </html>
