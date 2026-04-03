@@ -472,21 +472,21 @@ body.light .ar-bar{background:#e8f5e8}
       <button class="btn btn-sc btn-sm" onclick="toggleManual()">Cancel</button>
     </div>
   </div>
-  <div id="tie-ban" class="tie-ban" style="display:none">&#127919; <strong>Tiebreaker active</strong> &mdash; tied players ranked by closest winning score guess <span class="tie-val" id="tie-val"></span></div>
+  <div id="tie-ban" style="display:none"><span id="tie-val"></span></div>
   <div id="lb-container"></div>
 </div>
 
 
 <!-- TIERS PANEL -->
 <div class="panel" id="panel-tiers">
-  <div class="tier-view-sbar">
+  <div class="tier-view-sbar" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
     <div class="tier-view-info" id="tier-view-info"></div>
     <div style="display:flex;gap:6px">
       <button class="odds-btn" id="odds-btn" onclick="toggleOdds()" style="display:none">Show Odds</button>
       <button class="odds-btn" id="picks-sum-btn" onclick="togglePicksSummary()" style="display:none">Show Picks</button>
     </div>
   </div>
-  <div id="tier-picks-summary" style="display:none;margin-bottom:20px;border-bottom:1px solid var(--bd);padding-bottom:20px"></div>
+  <div id="tier-picks-summary" style="display:none;margin-bottom:24px;border-bottom:1px solid var(--bd);padding-bottom:20px"></div>
   <div id="tier-view-container"></div>
 </div>
 
@@ -845,9 +845,26 @@ async function fetchESPN(espnId){
         const id=(c.athlete&&c.athlete.id)||c.id;
         if(!id)return;
         const raw=(c.linescores||[]).map(ls=>parseScore(ls.value));
-        // If values look like raw stroke counts (all between 55 and 95), convert to to-par
-        const looksLikeStrokes=raw.length>0&&raw.every(v=>v!==null&&v>40);
-        rsMap[id]=looksLikeStrokes?raw.map(v=>v===null?null:v-coursePar):raw;
+        if(!raw.length)return;
+        // Determine if values are cumulative totals or per-round to-par
+        // Cumulative: values increase across rounds (e.g. 71, 141, 210)
+        // Per-round to-par: values near 0 (e.g. -1, +2, -3)
+        const looksLikeCumulative=raw.length>1&&raw.every(v=>v!==null&&v>40);
+        const looksLikeStrokes=raw.length>=1&&raw.every(v=>v!==null&&v>40)&&raw.length===1;
+        let perRound=raw;
+        if(looksLikeCumulative){
+          // Convert cumulative stroke totals to per-round to-par
+          perRound=raw.map((v,i)=>{
+            if(v===null)return null;
+            const prev=i===0?0:raw[i-1];
+            if(prev===null)return null;
+            const strokes=v-prev;
+            return strokes-coursePar;
+          });
+        }else if(looksLikeStrokes){
+          perRound=raw.map(v=>v===null?null:v-coursePar);
+        }
+        rsMap[id]=perRound;
       });
     }
   }catch(e){}
@@ -855,15 +872,33 @@ async function fetchESPN(espnId){
     const a=c.athlete||{};
     const name=a.displayName||((a.firstName||'')+' '+(a.lastName||'')).trim();
     const score=parseScore(c.score);
-    const st=(c.status||'').toLowerCase();
+    const st=(c.status&&c.status.type&&c.status.type.name||c.status||'').toLowerCase();
     let status='active';
     if(st.includes('cut')||c.didNotFinish)status='cut';
-    else if(st.includes('wd')||st.includes('withdrew'))status='wd';
+    else if(st.includes('wd')||st.includes('withdrew')||st.includes('withdrawn'))status='wd';
     else if(st.includes('dq'))status='dq';
     else if(isComplete)status='complete';
     const aid=(a.id)||c.id;
-    const roundScores=rsMap[aid]||(c.linescores||[]).map(ls=>parseScore(ls.value))||[];
-    return{name,score,status,position:(c.position&&c.position.displayName)||'',thru:c.thru||'',roundScores};
+    const rsFromMap=rsMap[aid];
+    // Round scores: use summary map if available, otherwise derive from linescores
+    let roundScores=[];
+    if(rsFromMap&&rsFromMap.length){
+      roundScores=rsFromMap;
+    }else{
+      const ls=(c.linescores||[]).map(ls=>parseScore(ls.value));
+      roundScores=ls;
+    }
+    // today = score in most recent round (round-by-round not cumulative)
+    // If roundScores are cumulative totals, derive per-round by differencing
+    let today=null;
+    if(roundScores.length>0){
+      today=roundScores[roundScores.length-1];
+    }
+    // thru: ESPN returns c.thru as holes played ("1"-"18", "F", or "")
+    const thru=c.thru||'';
+    // position
+    const position=(c.position&&c.position.displayName)||'';
+    return{name,score,status,position,thru,today,roundScores};
   });
   let aws=null;
   if(isComplete){
@@ -888,11 +923,11 @@ async function doRefresh(){
     allNames.forEach(name=>{
       const found=findPlayer(name,result.players);
       if(found){
-        matched[name]={score:found.score,status:found.status,position:found.position,thru:found.thru,roundScores:found.roundScores||[]};
+        matched[name]={score:found.score,status:found.status,position:found.position,thru:found.thru,today:found.today!==undefined?found.today:null,roundScores:found.roundScores||[]};
         if(found.status==='wd')wd.push(name);
       }else{
         notFound.push(name);
-        matched[name]={score:null,status:'unknown',position:'',thru:'',roundScores:[]};
+        matched[name]={score:null,status:'unknown',position:'',thru:'',today:null,roundScores:[]};
       }
     });
     state.prevScores=JSON.parse(JSON.stringify(state.scores));
@@ -1406,6 +1441,7 @@ function buildRows(){
       if(!s){const e=Object.entries(state.scores).find(([k])=>k.toLowerCase()===nm.toLowerCase());if(e)s=e[1];}
       return{name:nm,score:s&&s.score!==undefined?s.score:null,
         status:s&&s.status||'unknown',position:s&&s.position||'',thru:s&&s.thru||'',
+        today:s&&s.today!==undefined?s.today:null,
         cut:['cut','wd','dq'].includes(s&&s.status),wd:s&&s.status==='wd',
         tierColor:TC[pi]||'#5a6a7e',roundScores:s&&s.roundScores||[]};
     }).filter(Boolean);
@@ -1476,7 +1512,7 @@ function renderLb(){
     });
   }
   if(active.length)addSection('Active \u00B7 '+active.length+' participants',active,false);
-  if(elim.length)addSection('\u1F6AB Eliminated \u00B7 '+elim.length+' participants',elim,true);
+  if(elim.length)addSection('\uD83D\uDEAB Eliminated \u00B7 '+elim.length+' participants',elim,true);
   container.appendChild(lb);
 }
 
@@ -1514,7 +1550,7 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
   }
 
   // Rank icon
-  const rankIcon=row.eliminated?'\u2715':rank===1?'\u1F947':rank===2?'\u1F948':rank===3?'\u1F949':rank;
+  const rankIcon=row.eliminated?'\u2715':rank===1?'\uD83E\uDD47':rank===2?'\uD83E\uDD48':rank===3?'\uD83E\uDD49':rank;
   const scCls='lb-sc '+(row.eliminated?'elim-sc':row.poolScore===null?'pending':sClass(row.poolScore));
   const scTxt=row.eliminated?'ELIM':row.poolScore===null?'\u2014':fmtS(row.poolScore);
   const preview=row.picks.filter(Boolean).slice(0,3).join(', ');
@@ -1566,7 +1602,19 @@ function makeExpandedPicks(row,isTied,ws){
       for(let ri=pk.roundScores.length;ri<4;ri++)rsHtml+='<div class="rsc"><span class="rl">R'+(ri+1)+'</span><span class="rv pending">\u2014</span></div>';
       rsHtml+='</div>';
     }
-    const st=pk.thru?'Thru '+pk.thru:pk.status==='notstarted'?'Not started':pk.status==='notinfield'?'Not in field':pk.status;
+    // Status text: today===null means hasn't started current round
+    let st='';
+    if(pk.cut){st='Missed cut';}
+    else if(pk.wd){st='WD';}
+    else if(pk.today!==null&&pk.today!==undefined){
+      // Has started today's round
+      const thruNum=parseInt(pk.thru,10);
+      if(pk.thru==='F'||thruNum>=18){st='Finished';}
+      else if(pk.thru){st='Thru '+pk.thru;}
+      else{st='In progress';}
+    }else if(pk.score!==null){
+      st='Not started';
+    }else{st='';}
     html+=
       '<div class="pc'+(isCt?' ct':'')+'">'+
         '<div class="pt-tier" style="color:'+pk.tierColor+'">T'+(j+1)+'</div>'+
@@ -1645,8 +1693,8 @@ function renderTournLb(){
   html+='<div class="tourn-lb-hdr"><span>Pos</span><span>Player</span><span style="text-align:right">Total</span><span style="text-align:right">Today</span><span style="text-align:right">Thru</span></div>';
 
   function rowHtml(p){
-    const todayScore=p.roundScores&&p.roundScores.length?p.roundScores[p.roundScores.length-1]:null;
-    const thruTxt=p.thru?p.thru:(p.status==='cut'?'CUT':p.status==='wd'?'WD':p.status==='dq'?'DQ':'');
+    const todayScore=p.today!==undefined?p.today:(p.roundScores&&p.roundScores.length?p.roundScores[p.roundScores.length-1]:null);
+    const thruTxt=p.thru&&p.thru!==''?p.thru:(p.status==='cut'?'CUT':p.status==='wd'?'WD':p.status==='dq'?'DQ':'-');
     const isPick=highlightOn&&pickNames.has(p.name.toLowerCase());
     return '<div class="tourn-lb-row'+(isPick?' pick':'')+'">'+
       '<div class="tlb-pos">'+escH(p.position||'-')+'</div>'+
@@ -2168,6 +2216,9 @@ function init(){
     document.getElementById('man-tog').style.display='none';
     document.getElementById('edit-btn').style.display='none';
     document.getElementById('ar-btn').style.display='none';
+    document.getElementById('ref-btn').style.display='none';
+    const tlbRef=document.getElementById('tlb-ref-btn');
+    if(tlbRef)tlbRef.style.display='none';
     document.getElementById('vob').style.display='flex';
   }
 }
