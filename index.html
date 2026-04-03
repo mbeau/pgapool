@@ -862,13 +862,17 @@ async function fetchESPN(espnId){
       (ls.linescores||[]).length>0
     );
     const roundScores=roundLs.map(ls=>parseScore(ls.displayValue));
+    // today = score for the CURRENT round only (not a prior finished round)
+    // If the player's most recent round period < current roundNum, they haven't started today
+    const lastRoundPeriod=roundLs.length>0?roundLs[roundLs.length-1].period:0;
+    const hasStartedCurrentRound=lastRoundPeriod>=roundNum;
     let thru='';
     const lastRound=roundLs[roundLs.length-1];
-    if(lastRound){
+    if(lastRound&&hasStartedCurrentRound){
       const holes=(lastRound.linescores||[]).filter(h=>h.value!==undefined&&h.value!==null&&h.value!=='');
-      thru=holes.length>=18?'F':(holes.length>0?String(holes.length):(roundLs.length>0?'F':''));
+      thru=holes.length>=18?'F':(holes.length>0?String(holes.length):'');
     }
-    const today=roundScores.length>0?roundScores[roundScores.length-1]:null;
+    const today=hasStartedCurrentRound&&roundScores.length>0?roundScores[roundScores.length-1]:null;
     const ord=c.order;
     const position=ord!==undefined?(orderCounts[ord]>1?'T'+ord:String(ord)):'';
     const status=isComplete?'complete':'active';
