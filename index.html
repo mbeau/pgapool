@@ -1465,7 +1465,7 @@ function renderLb(){
   if(tiedIds.size>0){
     if(tieBan)tieBan.style.display='flex';
     const tv=document.getElementById('tie-val');
-    if(tv)tv.textContent=ws!==null?'Actual: '+fmtS(ws):'Winning score TBD';
+    if(tv)tv.textContent=ws!==null?'Actual: '+fmtS(ws):'';
   }else if(tieBan)tieBan.style.display='none';
 
   // Prev pool scores for movement
@@ -1745,7 +1745,7 @@ function updateTournBanner(){
     if(state.scoreSource){
       sb.style.display='';
       sb.className='src-b '+(state.scoreSource==='espn'?'src-espn':'src-man');
-      sb.textContent=state.scoreSource==='espn'?'\u1F4E1 ESPN Live':'\u270F\uFE0F Manual';
+      sb.textContent=state.scoreSource==='espn'?'\uD83D\uDCE1 ESPN Live':'\u270F\uFE0F Manual';
     }else sb.style.display='none';
     if(!isViewOnly)document.getElementById('change-lnk').style.display='';
   }else if(!isViewOnly){
