@@ -824,50 +824,55 @@ async function fetchESPN(espnId){
   const isComplete=!!(comp&&comp.status&&comp.status.type&&comp.status.type.completed);
   const roundNum=comp&&comp.status&&comp.status.period||null;
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
-  let rsMap={};
+  // Parse round scores, thru, today from the scoreboard endpoint directly.
+  // ESPN scoreboard linescores are CUMULATIVE to-par (e.g. -5, -7 means R1=-5, R2=-2).
+  // We convert to per-round by differencing.
+  // Also try the summary endpoint for richer per-hole data as a fallback.
+  let rsMap={}, thruMap={}, todayMap={};
   try{
     const dr=await fetch('https://site.api.espn.com/apis/site/v2/sports/golf/pga/summary?event='+espnId);
     if(dr.ok){
       const dd=await dr.json();
       const comps=(dd&&dd.competition&&dd.competition.competitors)||(dd&&dd.competitions&&dd.competitions[0]&&dd.competitions[0].competitors)||[];
-      // Determine course par from the data so we can convert raw strokes to to-par
-      // ESPN linescores return raw stroke counts (e.g. 71) not to-par values (e.g. +1)
-      // We detect this by checking if values look like raw strokes (typically 60-85)
-      // and convert using course par (almost always 70, 71, or 72)
-      let coursePar = 72; // default
-      // Try to find par from the competition data
-      try{
-        const compData = dd&&dd.competition||dd&&dd.competitions&&dd.competitions[0];
-        if(compData&&compData.course&&compData.course.par) coursePar=compData.course.par;
-        else if(compData&&compData.venue&&compData.venue.par) coursePar=compData.venue.par;
-      }catch(e){}
       comps.forEach(c=>{
         const id=(c.athlete&&c.athlete.id)||c.id;
         if(!id)return;
+        // Summary linescores are cumulative round totals in raw strokes (e.g. 67, 135)
         const raw=(c.linescores||[]).map(ls=>parseScore(ls.value));
         if(!raw.length)return;
-        // Determine if values are cumulative totals or per-round to-par
-        // Cumulative: values increase across rounds (e.g. 71, 141, 210)
-        // Per-round to-par: values near 0 (e.g. -1, +2, -3)
-        const looksLikeCumulative=raw.length>1&&raw.every(v=>v!==null&&v>40);
-        const looksLikeStrokes=raw.length>=1&&raw.every(v=>v!==null&&v>40)&&raw.length===1;
-        let perRound=raw;
-        if(looksLikeCumulative){
-          // Convert cumulative stroke totals to per-round to-par
-          perRound=raw.map((v,i)=>{
+        const looksLikeStrokes=raw.every(v=>v===null||v>40);
+        if(looksLikeStrokes){
+          // Cumulative strokes \u2192 per-round strokes \u2192 per-round to-par
+          const par=72; // Valero is par 72; will refine below
+          rsMap[id]=raw.map((v,i)=>{
             if(v===null)return null;
-            const prev=i===0?0:raw[i-1];
+            const prev=i===0?0:(raw[i-1]===null?null:raw[i-1]);
             if(prev===null)return null;
-            const strokes=v-prev;
-            return strokes-coursePar;
+            return (v-prev)-par;
           });
-        }else if(looksLikeStrokes){
-          perRound=raw.map(v=>v===null?null:v-coursePar);
+        }else{
+          // Already to-par per round or cumulative to-par \u2014 difference to get per-round
+          const looksLikeCumulative=raw.length>1&&Math.abs(raw[raw.length-1])>Math.abs(raw[0])+2;
+          if(looksLikeCumulative){
+            rsMap[id]=raw.map((v,i)=>{
+              if(v===null)return null;
+              return i===0?v:v-(raw[i-1]===null?0:raw[i-1]);
+            });
+          }else{
+            rsMap[id]=raw; // already per-round
+          }
         }
-        rsMap[id]=perRound;
+        // Thru from summary
+        const lastLs=c.linescores&&c.linescores[c.linescores.length-1];
+        if(lastLs){
+          const holes=lastLs.linescores||[];
+          const played=holes.filter(h=>h.value!==undefined&&h.value!==null&&h.value!=='').length;
+          thruMap[id]=played>=18?'F':(played>0?String(played):'');
+        }
       });
     }
   }catch(e){}
+
   const players=(comp&&comp.competitors||[]).map(c=>{
     const a=c.athlete||{};
     const name=a.displayName||((a.firstName||'')+' '+(a.lastName||'')).trim();
@@ -879,25 +884,29 @@ async function fetchESPN(espnId){
     else if(st.includes('dq'))status='dq';
     else if(isComplete)status='complete';
     const aid=(a.id)||c.id;
-    const rsFromMap=rsMap[aid];
-    // Round scores: use summary map if available, otherwise derive from linescores
+
+    // Round scores: prefer summary map, fall back to differencing scoreboard linescores
     let roundScores=[];
-    if(rsFromMap&&rsFromMap.length){
-      roundScores=rsFromMap;
-    }else{
-      const ls=(c.linescores||[]).map(ls=>parseScore(ls.value));
-      roundScores=ls;
+    if(rsMap[aid]&&rsMap[aid].length){
+      roundScores=rsMap[aid];
+    }else if(c.linescores&&c.linescores.length){
+      // Scoreboard linescores are cumulative to-par \u2014 difference them
+      const cumRaw=c.linescores.map(ls=>parseScore(ls.value));
+      roundScores=cumRaw.map((v,i)=>{
+        if(v===null)return null;
+        return i===0?v:(cumRaw[i-1]===null?v:v-cumRaw[i-1]);
+      });
     }
-    // today = score in most recent round (round-by-round not cumulative)
-    // If roundScores are cumulative totals, derive per-round by differencing
-    let today=null;
-    if(roundScores.length>0){
-      today=roundScores[roundScores.length-1];
-    }
-    // thru: ESPN returns c.thru as holes played ("1"-"18", "F", or "")
-    const thru=c.thru||'';
-    // position
+
+    // today = most recent per-round score
+    const today=roundScores.length>0?roundScores[roundScores.length-1]:null;
+
+    // thru: use summary map first, then scoreboard c.thru
+    const thru=thruMap[aid]!==undefined?thruMap[aid]:(c.thru||'');
+
+    // position: scoreboard gives c.position.displayName
     const position=(c.position&&c.position.displayName)||'';
+
     return{name,score,status,position,thru,today,roundScores};
   });
   let aws=null;
@@ -905,7 +914,14 @@ async function fetchESPN(espnId){
     const cs=players.filter(p=>p.status==='complete'&&p.score!==null).map(p=>p.score);
     if(cs.length)aws=Math.min.apply(null,cs);
   }
-  return{tournament:event.name,round,isComplete,actualWinningScore:aws,players};
+  // Projected cut: during R2, estimate cut line from current scores
+  let projCut=null;
+  if(roundNum===2&&!isComplete){
+    const active=players.filter(p=>!['cut','wd','dq'].includes(p.status)&&p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
+    if(active.length>=65)projCut=active[64];
+    else if(active.length>0)projCut=active[active.length-1];
+  }
+  return{tournament:event.name,round,roundNum,isComplete,actualWinningScore:aws,projCut,players};
 }
 
 // \u2500\u2500 REFRESH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
@@ -936,7 +952,7 @@ async function doRefresh(){
     const h=now.getHours(),m=now.getMinutes(),ampm=h>=12?'PM':'AM';
     const refreshTime=(h%12||12)+':'+(m<10?'0':'')+m+' '+ampm;
     state.lastRefresh=refreshTime;
-    state.meta={tournament:result.tournament,round:result.round,isComplete:result.isComplete,lastRefresh:refreshTime};
+    state.meta={tournament:result.tournament,round:result.round,roundNum:result.roundNum,isComplete:result.isComplete,projCut:result.projCut,lastRefresh:refreshTime};
     state.scoreSource='espn';
     if(result.isComplete&&result.actualWinningScore!=null)state.aws=String(result.actualWinningScore);
     // Pool history
