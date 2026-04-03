@@ -745,7 +745,7 @@ function buildSharePayload(){
     ti:tierNames,scores:state.scores||{},meta:state.meta||null,
     hist:state.poolHist||{},
     p:state.participants.filter(p=>p.name.trim()).map(p=>({
-      n:p.name.trim(),t:p.tiebreaker,pk:p.picks.map(pk=>pk.trim())
+      id:p.id,n:p.name.trim(),t:p.tiebreaker,pk:p.picks.map(pk=>pk.trim())
     }))};
 }
 
@@ -826,7 +826,13 @@ async function fetchESPN(espnId){
   if(!event)throw new Error('No event data found');
   const comp=event.competitions&&event.competitions[0];
   const isComplete=!!(comp&&comp.status&&comp.status.type&&comp.status.type.completed);
-  const roundNum=comp&&comp.status&&comp.status.period||null;
+  // comp.status.period is often null \u2014 derive roundNum from max period in linescores
+  let roundNum=comp&&comp.status&&comp.status.period||null;
+  if(!roundNum){
+    const allLs=(comp&&comp.competitors||[]).flatMap(c=>c.linescores||[]);
+    const maxPeriod=allLs.reduce((m,ls)=>Math.max(m,ls.period||0),0);
+    if(maxPeriod>0)roundNum=maxPeriod;
+  }
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
 
   // ESPN competitor keys: id, uid, type, order, athlete, score, linescores, statistics
@@ -1885,10 +1891,14 @@ async function autoSaveGist(){
 }
 
 function loadFromPayload(payload){
-  state.participants=payload.p.map((p,i)=>({
-    id:i+1,name:p.n,tiebreaker:p.t||'',
-    picks:[...(p.pk||[]),...Array(PICKS).fill('')].slice(0,PICKS)
-  }));
+  let _nextId=1;
+  state.participants=payload.p.map((p,i)=>{
+    const id=p.id||i+1;
+    if(id>=_nextId)_nextId=id+1;
+    return{id,name:p.n,tiebreaker:p.t||'',
+      picks:[...(p.pk||[]),...Array(PICKS).fill('')].slice(0,PICKS)};
+  });
+  state.nextId=_nextId;
   state.aws=payload.aws||'';
   state.tid=payload.tid||'';
   state.poolName=payload.pn||'The Pool';
