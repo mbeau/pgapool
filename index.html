@@ -411,10 +411,11 @@ body.light .ar-bar{background:#e8f5e8}
 <!-- VIEW-ONLY BANNER (hidden by default) -->
 <div class="vob" id="vob" style="display:none">
   <span style="font-size:22px">🔗</span>
-  <div>
+  <div style="flex:1">
     <div class="vob-t">Shared Pool View</div>
-    <div class="vob-s">Picks loaded from shared link — hit Refresh ESPN to load live scores</div>
+    <div class="vob-s" id="vob-s">Scores auto-update every 15 min via Cloudflare</div>
   </div>
+  <button class="btn btn-sc btn-sm" id="vob-refresh" onclick="refreshGist()">⟳ Refresh</button>
 </div>
 
 <!-- TABS -->
@@ -839,11 +840,6 @@ async function fetchESPN(espnId){
   }
   roundNum=roundNum?Number(roundNum):null;
   console.log('[ESPN DEBUG] roundNum:',roundNum,'projCut will calculate:',roundNum===2&&!isComplete);
-  // Debug specific player linescores
-  const debugPlayer=(comp&&comp.competitors||[]).find(c=>c.athlete&&(c.athlete.displayName||'').includes('Spieth'));
-  if(debugPlayer){
-    console.log('[ESPN DEBUG] Spieth score:',debugPlayer.score,'linescores:',JSON.stringify(debugPlayer.linescores.map(ls=>({period:ls.period,displayValue:ls.displayValue,holes:(ls.linescores||[]).length}))));
-  }
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
 
   // ESPN competitor keys: id, uid, type, order, athlete, score, linescores, statistics
@@ -857,7 +853,14 @@ async function fetchESPN(espnId){
     const a=c.athlete||{};
     const name=a.displayName||a.fullName||'';
     const score=parseScore(c.score);
-    const roundLs=(c.linescores||[]).filter(ls=>ls.period&&ls.displayValue!==undefined&&ls.displayValue!=='');
+    // Filter to rounds that have actually started (at least 1 hole played)
+    // ESPN adds empty placeholder entries for future rounds with 0 holes
+    const roundLs=(c.linescores||[]).filter(ls=>
+      ls.period&&
+      ls.displayValue!==undefined&&
+      ls.displayValue!==''&&
+      (ls.linescores||[]).length>0
+    );
     const roundScores=roundLs.map(ls=>parseScore(ls.displayValue));
     let thru='';
     const lastRound=roundLs[roundLs.length-1];
@@ -2229,15 +2232,32 @@ if(_rawHashVal.startsWith('gist:')){
   const _gistId=_rawHashVal.slice(5);
   loadSaved();
   init();
-  fetch('https://api.github.com/gists/'+_gistId,{headers:{'User-Agent':'GolfPool'}})
-    .then(r=>{if(!r.ok)throw new Error('Gist not found ('+r.status+')');return r.json();})
-    .then(gd=>{
-      const content=gd.files&&gd.files['pool.json']&&gd.files['pool.json'].content;
-      if(!content)throw new Error('pool.json not found in gist');
-      loadFromPayload(JSON.parse(content));
-      init();
+
+  function refreshGist(){
+    const btn=document.getElementById('vob-refresh');
+    const sub=document.getElementById('vob-s');
+    if(btn){btn.textContent='\u27F3 Loading...';btn.disabled=true;}
+    // Cache-buster ensures we always get the latest version
+    fetch('https://api.github.com/gists/'+_gistId+'?_='+Date.now(),{
+      headers:{'User-Agent':'GolfPool','Cache-Control':'no-cache'}
     })
-    .catch(e=>{showErr('Could not load pool data: '+e.message);});
+      .then(r=>{if(!r.ok)throw new Error('Gist not found ('+r.status+')');return r.json();})
+      .then(gd=>{
+        const content=gd.files&&gd.files['pool.json']&&gd.files['pool.json'].content;
+        if(!content)throw new Error('pool.json not found in gist');
+        loadFromPayload(JSON.parse(content));
+        init();
+        const ts=state.lastRefresh||'just now';
+        if(sub)sub.textContent='Scores updated: '+ts;
+        if(btn){btn.textContent='\u27F3 Refresh';btn.disabled=false;}
+      })
+      .catch(e=>{
+        showErr('Could not load pool data: '+e.message);
+        if(btn){btn.textContent='\u27F3 Refresh';btn.disabled=false;}
+      });
+  }
+
+  refreshGist();
 }else{
   const hashData=decodeHash(_rawHash);
   if(hashData){
