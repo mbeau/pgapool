@@ -830,8 +830,10 @@ async function fetchESPN(espnId){
   if(firstC){
     console.log('[ESPN DEBUG] First player:', firstC.athlete&&firstC.athlete.displayName);
     console.log('[ESPN DEBUG] score:', firstC.score);
-    console.log('[ESPN DEBUG] status full:', JSON.stringify(firstC.status));
-    console.log('[ESPN DEBUG] sortOrder/position fields:', firstC.sortOrder, firstC.rank, firstC.standing);
+    console.log('[ESPN DEBUG] All keys on competitor:', Object.keys(firstC));
+    console.log('[ESPN DEBUG] athlete keys:', firstC.athlete?Object.keys(firstC.athlete):[]);
+    console.log('[ESPN DEBUG] status:', firstC.status);
+    console.log('[ESPN DEBUG] competitor.statistics:', JSON.stringify(firstC.statistics));
   }
 
   // ESPN scoreboard structure (confirmed from debug):
