@@ -472,6 +472,7 @@ body.light .ar-bar{background:#e8f5e8}
       <button class="btn btn-sc btn-sm" onclick="toggleManual()">Cancel</button>
     </div>
   </div>
+  <div id="tie-ban" class="tie-ban" style="display:none">&#127919; <strong>Tiebreaker active</strong> &mdash; tied players ranked by closest winning score guess <span class="tie-val" id="tie-val"></span></div>
   <div id="lb-container"></div>
 </div>
 
@@ -735,16 +736,18 @@ function loadSaved(){
 }
 
 // \u2500\u2500 URL HASH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function buildSharePayload(){
+  const tierNames=state.tiers.map(t=>t.map(p=>p.name.trim()));
+  return{v:7,aws:state.aws,tid:state.tid,pn:state.poolName||'The Pool',
+    ti:tierNames,scores:state.scores||{},meta:state.meta||null,
+    p:state.participants.filter(p=>p.name.trim()).map(p=>({
+      n:p.name.trim(),t:p.tiebreaker,pk:p.picks.map(pk=>pk.trim())
+    }))};
+}
+
 function encodeHash(){
   try{
-    // Only include non-empty tier names for compactness
-    const tierNames=state.tiers.map(t=>t.map(p=>p.name.trim()));
-    const payload={v:5,aws:state.aws,tid:state.tid,pn:state.poolName||'The Pool',
-      ti:tierNames,
-      p:state.participants.filter(p=>p.name.trim()).map(p=>({
-        n:p.name.trim(),t:p.tiebreaker,pk:p.picks.map(pk=>pk.trim())
-      }))};
-    return btoa(encodeURIComponent(JSON.stringify(payload)));
+    return btoa(encodeURIComponent(JSON.stringify(buildSharePayload())));
   }catch(e){return null;}
 }
 
@@ -754,24 +757,7 @@ function decodeHash(hash){
     if(!raw)return null;
     const payload=JSON.parse(decodeURIComponent(atob(raw)));
     if(!payload||!payload.p)return null;
-    // Reconstruct tiers (names only in share link, no odds)
-    let tiers=Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
-    if(payload.ti&&Array.isArray(payload.ti)){
-      tiers=payload.ti.map(t=>{
-        const sz2=ti2===PICKS-1?TIER_SIZE-1:TIER_SIZE;
-        const arr=Array.from({length:sz2},()=>({name:'',odds:''}));
-        (t||[]).forEach((nm,i)=>{if(i<sz2)arr[i]={name:nm||'',odds:''};});
-        return arr;
-      });
-      while(tiers.length<PICKS)tiers.push(Array.from({length:tiers.length===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
-    }
-    return{
-      aws:payload.aws||'', tid:payload.tid||'', poolName:payload.pn||'The Pool', tiers,
-      participants:payload.p.map((p,i)=>({
-        id:i+1,name:p.n,tiebreaker:p.t||'',
-        picks:[...(p.pk||[]),...Array(PICKS).fill('')].slice(0,PICKS)
-      }))
-    };
+    return payload;
   }catch(e){return null;}
 }
 
@@ -794,7 +780,7 @@ function calcPool(picks){
 }
 function normName(s){
   s=s.toLowerCase();
-  [['\xe4','ae'],['\xf6','oe'],['\xfc','ue'],['\xdf','ss'],['\xf8','o'],['\xe5','aa'],
+  [['\xe4','ae'],['\xf6','oe'],['\xfc','ue'],['\xdf','ss'],['\xf8','o'],['\xe5','a'],
    ['\xe6','ae'],['\xe9','e'],['\xe8','e'],['\xea','e'],['\xeb','e'],['\xe1','a'],
    ['\xe0','a'],['\xe2','a'],['\xe3','a'],['\xed','i'],['\xec','i'],['\xee','i'],
    ['\xf3','o'],['\xf2','o'],['\xf4','o'],['\xf5','o'],['\xfa','u'],['\xf9','u'],
@@ -930,14 +916,12 @@ async function doRefresh(){
     });
     if(notFound.length){
       const b=document.getElementById('un-banner');
-      b.innerHTML='<strong>\u26A0\uFE0F '+notFound.length+' player'+(notFound.length>1?'s':'')+' not found in ESPN data:</strong> '+notFound.join(', ')+' \u2014 check spelling or use Manual entry.';
-      b.style.display='block';
-    }else{document.getElementById('un-banner').style.display='none';}
+      if(b){b.innerHTML='<strong>\u26A0\uFE0F '+notFound.length+' player'+(notFound.length>1?'s':'')+' not found in ESPN data:</strong> '+notFound.join(', ')+' \u2014 check spelling or use Manual entry.';b.style.display='block';}
+    }else{const b=document.getElementById('un-banner');if(b)b.style.display='none';}
     if(wd.length){
       const b=document.getElementById('wd-banner');
-      b.innerHTML='<strong>\u26A0\uFE0F Withdrawal Alert</strong>'+wd.join(', ')+(wd.length===1?' has':' have')+' withdrawn. Check with admin.';
-      b.style.display='block';
-    }else{document.getElementById('wd-banner').style.display='none';}
+      if(b){b.innerHTML='<strong>\u26A0\uFE0F Withdrawal Alert</strong> '+wd.join(', ')+(wd.length===1?' has':' have')+' withdrawn. Check with admin.';b.style.display='block';}
+    }else{const b=document.getElementById('wd-banner');if(b)b.style.display='none';}
     save();
     renderLb();
     updateStatusBar();
@@ -1360,8 +1344,8 @@ function onTournChange(){
   const inf=document.getElementById('tsel-inf');
   inf.innerHTML=selT?'Scores from: <b>ESPN \u00B7 '+selT.name+'</b>':'';
   updateTournBanner();updateStatusBar();updateShareDisplay();
-  document.getElementById('un-banner').style.display='none';
-  document.getElementById('wd-banner').style.display='none';
+  const _ub=document.getElementById('un-banner');if(_ub)_ub.style.display='none';
+  const _wb=document.getElementById('wd-banner');if(_wb)_wb.style.display='none';
 }
 
 function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1459,9 +1443,10 @@ function renderLb(){
   }
   const tieBan=document.getElementById('tie-ban');
   if(tiedIds.size>0){
-    tieBan.style.display='flex';
-    document.getElementById('tie-val').textContent=ws!==null?'Actual: '+fmtS(ws):'Winning score TBD';
-  }else tieBan.style.display='none';
+    if(tieBan)tieBan.style.display='flex';
+    const tv=document.getElementById('tie-val');
+    if(tv)tv.textContent=ws!==null?'Actual: '+fmtS(ws):'Winning score TBD';
+  }else if(tieBan)tieBan.style.display='none';
 
   // Prev pool scores for movement
   const prevPool={};
@@ -1954,13 +1939,18 @@ function importTiersFromExcel(){
   const raw=ta.value.trim();
   if(!raw){if(st){st.textContent='Nothing to import.';st.className='bulk-st err';}return;}
   const lines=raw.split('\n').map(l=>l.replace(/\r$/,''));
-  let startRow=0;
+  // Detect and skip header row
   const firstCols=(lines[0]||'').split('\t');
   const firstCell=(firstCols[0]||'').trim().toLowerCase();
-  if(firstCell===''||firstCell.startsWith('t1')||firstCell.startsWith('tier')||firstCell==='name'||firstCell==='player')startRow=1;
-  const newTiers=Array.from({length:PICKS},(_,ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
+  const startRow=(firstCell===''||firstCell.startsWith('t1')||firstCell.startsWith('tier')||firstCell==='name'||firstCell==='player')?1:0;
   const dataRows=lines.slice(startRow).filter(l=>l.trim());
-  const hasOddsCols=dataRows.length>0&&dataRows[0].split('\t').length>PICKS;
+  if(!dataRows.length){if(st){st.textContent='No data rows found.';st.className='bulk-st err';}return;}
+  // Format: each column is a tier, each row is a player slot
+  // Col 0 = T1 names, Col 1 = T2 names ... Col 5 = T6 names
+  // OR with odds: Col 0 = T1 names, Col 1 = T1 odds, Col 2 = T2 names, Col 3 = T2 odds ...
+  const firstRowCols=dataRows[0].split('\t').length;
+  const hasOdds=firstRowCols>=PICKS*2;
+  const newTiers=Array.from({length:PICKS},(_,ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
   const tierCounts=Array(PICKS).fill(0);
   let total=0;
   dataRows.forEach(line=>{
@@ -1968,8 +1958,8 @@ function importTiersFromExcel(){
     for(let ti=0;ti<PICKS;ti++){
       const maxP=ti===PICKS-1?TIER_SIZE-1:TIER_SIZE;
       if(tierCounts[ti]>=maxP)continue;
-      const nameIdx=hasOddsCols?ti*2:ti;
-      const oddsIdx=hasOddsCols?ti*2+1:-1;
+      const nameIdx=hasOdds?ti*2:ti;
+      const oddsIdx=hasOdds?ti*2+1:-1;
       const nm=(cols[nameIdx]||'').trim();
       if(!nm)continue;
       const odds=oddsIdx>=0?(cols[oddsIdx]||'').trim():'';
@@ -1977,7 +1967,7 @@ function importTiersFromExcel(){
       tierCounts[ti]++;total++;
     }
   });
-  if(total===0){if(st){st.textContent='No players found. Check column order.';st.className='bulk-st err';}return;}
+  if(total===0){if(st){st.textContent='No players found. Check format: one tier per column, one player per row.';st.className='bulk-st err';}return;}
   state.tiers=newTiers;
   state.tiersTourn=SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'';
   shareUrl=null;save();renderTierSetup();renderTierView();renderCopyFormLists();validatePicks();checkTierPickMismatch();
