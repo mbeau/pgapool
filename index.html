@@ -2239,7 +2239,7 @@ if(_rawHashVal.startsWith('gist:')){
     if(btn){btn.textContent='\u27F3 Loading...';btn.disabled=true;}
     // Cache-buster ensures we always get the latest version
     fetch('https://api.github.com/gists/'+_gistId+'?_='+Date.now(),{
-      headers:{'User-Agent':'GolfPool','Cache-Control':'no-cache'}
+      headers:{'User-Agent':'GolfPool'}
     })
       .then(r=>{if(!r.ok)throw new Error('Gist not found ('+r.status+')');return r.json();})
       .then(gd=>{
