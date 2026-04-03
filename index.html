@@ -132,7 +132,8 @@ body{background:var(--bg);color:var(--tx);font-family:'Barlow',sans-serif;min-he
 .ps.under{color:var(--gr)}.ps.over{color:var(--re)}
 .pst{font-size:10px;color:var(--mu);letter-spacing:.5px;text-transform:uppercase}
 .bdg{font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;border-radius:4px;padding:2px 5px;text-transform:uppercase}
-.bdg-ct{background:var(--ac);color:#000}.bdg-cu{background:var(--re);color:#fff}.bdg-wd{background:var(--or);color:#fff}
+.bdg-ct{background:var(--ac);color:#000}.bdg-cu{background:var(--re);color:#fff}
+.bdg-danger{background:rgba(224,124,48,.18);color:var(--or);border:1px solid rgba(224,124,48,.4)}.bdg-wd{background:var(--or);color:#fff}
 .rs{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
 .rsc{display:flex;flex-direction:column;align-items:center;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:2px 5px;min-width:30px}
 .rl{font-size:8px;color:var(--mu);text-transform:uppercase}
@@ -825,63 +826,35 @@ async function fetchESPN(espnId){
   const roundNum=comp&&comp.status&&comp.status.period||null;
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
 
-  // Debug: log first competitor's raw data so we can see the structure
-  const firstC=comp&&comp.competitors&&comp.competitors[0];
-  if(firstC){
-    console.log('[ESPN DEBUG] First player:', firstC.athlete&&firstC.athlete.displayName);
-    console.log('[ESPN DEBUG] score:', firstC.score);
-    console.log('[ESPN DEBUG] All keys on competitor:', Object.keys(firstC));
-    console.log('[ESPN DEBUG] athlete keys:', firstC.athlete?Object.keys(firstC.athlete):[]);
-    console.log('[ESPN DEBUG] status:', firstC.status);
-    console.log('[ESPN DEBUG] competitor.statistics:', JSON.stringify(firstC.statistics));
-  }
+  // ESPN competitor keys: id, uid, type, order, athlete, score, linescores, statistics
+  // - order: leaderboard rank (ties share same value)
+  // - linescores: [{displayValue:"-6", period:1, linescores:[holes...]}, ...]
+  const allComps=comp&&comp.competitors||[];
+  const orderCounts={};
+  allComps.forEach(c=>{const o=c.order;if(o!==undefined)orderCounts[o]=(orderCounts[o]||0)+1;});
 
-  // ESPN scoreboard structure (confirmed from debug):
-  // c.linescores = array of rounds, one entry per round played
-  //   - ls.displayValue = per-round to-par string ("-6", "-4", "E", "+2")
-  //   - ls.value = raw stroke count for that round (66, 27, etc.)
-  //   - ls.period = round number (1, 2, 3, 4)
-  //   - ls.linescores = array of individual hole scores
-  // c.score = overall to-par total (number)
-  // c.thru and c.position are undefined \u2014 need to derive from linescores
-
-  const players=(comp&&comp.competitors||[]).map(c=>{
+  const players=allComps.map(c=>{
     const a=c.athlete||{};
-    const name=a.displayName||((a.firstName||'')+' '+(a.lastName||'')).trim();
+    const name=a.displayName||a.fullName||'';
     const score=parseScore(c.score);
-    const st=(c.status&&c.status.type&&c.status.type.name||c.status||'').toLowerCase();
-    let status='active';
-    if(st.includes('cut')||c.didNotFinish)status='cut';
-    else if(st.includes('wd')||st.includes('withdrew')||st.includes('withdrawn'))status='wd';
-    else if(st.includes('dq'))status='dq';
-    else if(isComplete)status='complete';
-
-    // Per-round to-par scores: use displayValue on each round linescore
-    const roundLs=(c.linescores||[]).filter(ls=>ls.period&&ls.displayValue!==undefined);
+    const roundLs=(c.linescores||[]).filter(ls=>ls.period&&ls.displayValue!==undefined&&ls.displayValue!=='');
     const roundScores=roundLs.map(ls=>parseScore(ls.displayValue));
-
-    // Thru: count holes played in the most recent active round
     let thru='';
     const lastRound=roundLs[roundLs.length-1];
     if(lastRound){
-      const holes=(lastRound.linescores||[]).filter(h=>h.value!==undefined&&h.value!==null);
-      if(holes.length>=18)thru='F';
-      else if(holes.length>0)thru=String(holes.length);
+      const holes=(lastRound.linescores||[]).filter(h=>h.value!==undefined&&h.value!==null&&h.value!=='');
+      thru=holes.length>=18?'F':(holes.length>0?String(holes.length):(roundLs.length>0?'F':''));
     }
-
-    // today = most recent per-round to-par score
     const today=roundScores.length>0?roundScores[roundScores.length-1]:null;
-
-    // position: try various fields ESPN might use
-    const position=(c.position&&c.position.displayName)||(c.rank&&String(c.rank))||
-      (c.sortOrder&&String(c.sortOrder))||'';
-
+    const ord=c.order;
+    const position=ord!==undefined?(orderCounts[ord]>1?'T'+ord:String(ord)):'';
+    const status=isComplete?'complete':'active';
     return{name,score,status,position,thru,today,roundScores};
   });
 
   let aws=null;
   if(isComplete){
-    const cs=players.filter(p=>p.status==='complete'&&p.score!==null).map(p=>p.score);
+    const cs=players.filter(p=>p.score!==null).map(p=>p.score);
     if(cs.length)aws=Math.min.apply(null,cs);
   }
   let projCut=null;
@@ -1577,8 +1550,11 @@ function makeExpandedPicks(row,isTied,ws){
   row.pd.forEach((pk,j)=>{
     const isCt=row.ctNames.has(pk.name);
     let badge='';
+    const projCut=state.meta&&state.meta.projCut!==null&&state.meta.projCut!==undefined?state.meta.projCut:null;
+    const atRisk=projCut!==null&&!pk.cut&&pk.score!==null&&state.meta&&state.meta.roundNum===2&&pk.score>projCut-2&&pk.score<=projCut+1;
     if(pk.wd)badge='<span class="bdg bdg-wd">WD</span>';
     else if(pk.cut)badge='<span class="bdg bdg-cu">CUT</span>';
+    else if(atRisk)badge='<span class="bdg bdg-danger">CUT RISK</span>';
     else if(isCt)badge='<span class="bdg bdg-ct">Counting</span>';
     let rsHtml='';
     if(pk.roundScores&&pk.roundScores.length){
@@ -1675,7 +1651,7 @@ function renderTournLb(){
 
   let html='<div class="tourn-lb-wrap"><div class="tourn-lb">';
   // Header
-  html+='<div class="tourn-lb-hdr"><span>Pos</span><span>Player</span><span style="text-align:right">Total</span><span style="text-align:right">Today</span><span style="text-align:right">Thru</span></div>';
+  html+='<div class="tourn-lb-hdr"><span class="tlb-pos">Pos</span><span class="tlb-name">Player</span><span class="tlb-score" style="font-size:11px;font-weight:700">Total</span><span class="tlb-today" style="font-size:11px;font-weight:700">Today</span><span class="tlb-thru" style="font-size:11px;font-weight:700">Thru</span></div>';
 
   function rowHtml(p){
     const todayScore=p.today!==undefined?p.today:(p.roundScores&&p.roundScores.length?p.roundScores[p.roundScores.length-1]:null);
