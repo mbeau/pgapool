@@ -839,6 +839,11 @@ async function fetchESPN(espnId){
   }
   roundNum=roundNum?Number(roundNum):null;
   console.log('[ESPN DEBUG] roundNum:',roundNum,'projCut will calculate:',roundNum===2&&!isComplete);
+  // Debug specific player linescores
+  const debugPlayer=(comp&&comp.competitors||[]).find(c=>c.athlete&&(c.athlete.displayName||'').includes('Spieth'));
+  if(debugPlayer){
+    console.log('[ESPN DEBUG] Spieth score:',debugPlayer.score,'linescores:',JSON.stringify(debugPlayer.linescores.map(ls=>({period:ls.period,displayValue:ls.displayValue,holes:(ls.linescores||[]).length}))));
+  }
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
 
   // ESPN competitor keys: id, uid, type, order, athlete, score, linescores, statistics
