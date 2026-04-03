@@ -824,55 +824,22 @@ async function fetchESPN(espnId){
   const isComplete=!!(comp&&comp.status&&comp.status.type&&comp.status.type.completed);
   const roundNum=comp&&comp.status&&comp.status.period||null;
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
-  // Parse round scores, thru, today from the scoreboard endpoint directly.
-  // ESPN scoreboard linescores are CUMULATIVE to-par (e.g. -5, -7 means R1=-5, R2=-2).
-  // We convert to per-round by differencing.
-  // Also try the summary endpoint for richer per-hole data as a fallback.
-  let rsMap={}, thruMap={}, todayMap={};
-  try{
-    const dr=await fetch('https://site.api.espn.com/apis/site/v2/sports/golf/pga/summary?event='+espnId);
-    if(dr.ok){
-      const dd=await dr.json();
-      const comps=(dd&&dd.competition&&dd.competition.competitors)||(dd&&dd.competitions&&dd.competitions[0]&&dd.competitions[0].competitors)||[];
-      comps.forEach(c=>{
-        const id=(c.athlete&&c.athlete.id)||c.id;
-        if(!id)return;
-        // Summary linescores are cumulative round totals in raw strokes (e.g. 67, 135)
-        const raw=(c.linescores||[]).map(ls=>parseScore(ls.value));
-        if(!raw.length)return;
-        const looksLikeStrokes=raw.every(v=>v===null||v>40);
-        if(looksLikeStrokes){
-          // Cumulative strokes \u2192 per-round strokes \u2192 per-round to-par
-          const par=72; // Valero is par 72; will refine below
-          rsMap[id]=raw.map((v,i)=>{
-            if(v===null)return null;
-            const prev=i===0?0:(raw[i-1]===null?null:raw[i-1]);
-            if(prev===null)return null;
-            return (v-prev)-par;
-          });
-        }else{
-          // Already to-par per round or cumulative to-par \u2014 difference to get per-round
-          const looksLikeCumulative=raw.length>1&&Math.abs(raw[raw.length-1])>Math.abs(raw[0])+2;
-          if(looksLikeCumulative){
-            rsMap[id]=raw.map((v,i)=>{
-              if(v===null)return null;
-              return i===0?v:v-(raw[i-1]===null?0:raw[i-1]);
-            });
-          }else{
-            rsMap[id]=raw; // already per-round
-          }
-        }
-        // Thru from summary
-        const lastLs=c.linescores&&c.linescores[c.linescores.length-1];
-        if(lastLs){
-          const holes=lastLs.linescores||[];
-          const played=holes.filter(h=>h.value!==undefined&&h.value!==null&&h.value!=='').length;
-          thruMap[id]=played>=18?'F':(played>0?String(played):'');
-        }
-      });
-    }
-  }catch(e){}
 
+  // Debug: log first competitor's raw data so we can see the structure
+  const firstC=comp&&comp.competitors&&comp.competitors[0];
+  if(firstC){
+    console.log('[ESPN DEBUG] First player:', firstC.athlete&&firstC.athlete.displayName);
+    console.log('[ESPN DEBUG] score:', firstC.score);
+    console.log('[ESPN DEBUG] thru:', firstC.thru);
+    console.log('[ESPN DEBUG] position:', firstC.position);
+    console.log('[ESPN DEBUG] linescores:', JSON.stringify(firstC.linescores));
+    console.log('[ESPN DEBUG] status:', JSON.stringify(firstC.status));
+  }
+
+  // Scoreboard linescores are CUMULATIVE to-par totals per round
+  // e.g. after R1=-5, R2=-7: linescores = [{value:"-5"},{value:"-7"}]
+  // We difference them to get per-round: R1=-5, R2=-2
+  // The score field on the competitor is the overall total (also cumulative to-par)
   const players=(comp&&comp.competitors||[]).map(c=>{
     const a=c.athlete||{};
     const name=a.displayName||((a.firstName||'')+' '+(a.lastName||'')).trim();
@@ -883,38 +850,33 @@ async function fetchESPN(espnId){
     else if(st.includes('wd')||st.includes('withdrew')||st.includes('withdrawn'))status='wd';
     else if(st.includes('dq'))status='dq';
     else if(isComplete)status='complete';
-    const aid=(a.id)||c.id;
 
-    // Round scores: prefer summary map, fall back to differencing scoreboard linescores
-    let roundScores=[];
-    if(rsMap[aid]&&rsMap[aid].length){
-      roundScores=rsMap[aid];
-    }else if(c.linescores&&c.linescores.length){
-      // Scoreboard linescores are cumulative to-par \u2014 difference them
-      const cumRaw=c.linescores.map(ls=>parseScore(ls.value));
-      roundScores=cumRaw.map((v,i)=>{
-        if(v===null)return null;
-        return i===0?v:(cumRaw[i-1]===null?v:v-cumRaw[i-1]);
-      });
-    }
+    // linescores on scoreboard = cumulative to-par per round
+    const cumScores=(c.linescores||[]).map(ls=>parseScore(ls.value));
+    // Difference to get per-round scores
+    const roundScores=cumScores.map((v,i)=>{
+      if(v===null)return null;
+      if(i===0)return v; // R1 cumulative = R1 score
+      return cumScores[i-1]===null?null:v-cumScores[i-1];
+    });
 
     // today = most recent per-round score
     const today=roundScores.length>0?roundScores[roundScores.length-1]:null;
 
-    // thru: use summary map first, then scoreboard c.thru
-    const thru=thruMap[aid]!==undefined?thruMap[aid]:(c.thru||'');
+    // thru from c.thru (ESPN scoreboard provides this directly)
+    const thru=c.thru||'';
 
-    // position: scoreboard gives c.position.displayName
+    // position
     const position=(c.position&&c.position.displayName)||'';
 
     return{name,score,status,position,thru,today,roundScores};
   });
+
   let aws=null;
   if(isComplete){
     const cs=players.filter(p=>p.status==='complete'&&p.score!==null).map(p=>p.score);
     if(cs.length)aws=Math.min.apply(null,cs);
   }
-  // Projected cut: during R2, estimate cut line from current scores
   let projCut=null;
   if(roundNum===2&&!isComplete){
     const active=players.filter(p=>!['cut','wd','dq'].includes(p.status)&&p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
