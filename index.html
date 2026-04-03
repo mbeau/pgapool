@@ -840,7 +840,6 @@ async function fetchESPN(espnId){
     if(maxPeriod>0)roundNum=maxPeriod;
   }
   roundNum=roundNum?Number(roundNum):null;
-  console.log('[ESPN DEBUG] roundNum:',roundNum,'projCut will calculate:',roundNum===2&&!isComplete);
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
 
   // ESPN competitor keys: id, uid, type, order, athlete, score, linescores, statistics
