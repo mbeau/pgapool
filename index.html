@@ -833,9 +833,11 @@ async function fetchESPN(espnId){
   let roundNum=comp&&comp.status&&comp.status.period||null;
   if(!roundNum){
     const allLs=(comp&&comp.competitors||[]).flatMap(c=>c.linescores||[]);
-    const maxPeriod=allLs.reduce((m,ls)=>Math.max(m,ls.period||0),0);
+    const maxPeriod=allLs.reduce((m,ls)=>Math.max(m,Number(ls.period)||0),0);
     if(maxPeriod>0)roundNum=maxPeriod;
   }
+  roundNum=roundNum?Number(roundNum):null;
+  console.log('[ESPN DEBUG] roundNum:',roundNum,'projCut will calculate:',roundNum===2&&!isComplete);
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
 
   // ESPN competitor keys: id, uid, type, order, athlete, score, linescores, statistics
@@ -1644,7 +1646,7 @@ function renderTournLb(){
   if(hlBtn)hlBtn.style.display='';
   const crBtn=document.getElementById('cut-risk-btn');
   if(crBtn){
-    const isR2=tournLbData.projCut!==null||(tournLbData.roundNum===2);
+    const isR2=(tournLbData.roundNum===2)||(tournLbData.projCut!==null)||(state.meta&&state.meta.roundNum===2);
     crBtn.style.display=isR2?'':'none';
     crBtn.textContent=showCutRisk?'Cut Risk: On':'Cut Risk: Off';
     crBtn.classList.toggle('hl-on',showCutRisk);
