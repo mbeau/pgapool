@@ -830,16 +830,19 @@ async function fetchESPN(espnId){
   if(firstC){
     console.log('[ESPN DEBUG] First player:', firstC.athlete&&firstC.athlete.displayName);
     console.log('[ESPN DEBUG] score:', firstC.score);
-    console.log('[ESPN DEBUG] thru:', firstC.thru);
-    console.log('[ESPN DEBUG] position:', firstC.position);
-    console.log('[ESPN DEBUG] linescores:', JSON.stringify(firstC.linescores));
-    console.log('[ESPN DEBUG] status:', JSON.stringify(firstC.status));
+    console.log('[ESPN DEBUG] status full:', JSON.stringify(firstC.status));
+    console.log('[ESPN DEBUG] sortOrder/position fields:', firstC.sortOrder, firstC.rank, firstC.standing);
   }
 
-  // Scoreboard linescores are CUMULATIVE to-par totals per round
-  // e.g. after R1=-5, R2=-7: linescores = [{value:"-5"},{value:"-7"}]
-  // We difference them to get per-round: R1=-5, R2=-2
-  // The score field on the competitor is the overall total (also cumulative to-par)
+  // ESPN scoreboard structure (confirmed from debug):
+  // c.linescores = array of rounds, one entry per round played
+  //   - ls.displayValue = per-round to-par string ("-6", "-4", "E", "+2")
+  //   - ls.value = raw stroke count for that round (66, 27, etc.)
+  //   - ls.period = round number (1, 2, 3, 4)
+  //   - ls.linescores = array of individual hole scores
+  // c.score = overall to-par total (number)
+  // c.thru and c.position are undefined \u2014 need to derive from linescores
+
   const players=(comp&&comp.competitors||[]).map(c=>{
     const a=c.athlete||{};
     const name=a.displayName||((a.firstName||'')+' '+(a.lastName||'')).trim();
@@ -851,23 +854,25 @@ async function fetchESPN(espnId){
     else if(st.includes('dq'))status='dq';
     else if(isComplete)status='complete';
 
-    // linescores on scoreboard = cumulative to-par per round
-    const cumScores=(c.linescores||[]).map(ls=>parseScore(ls.value));
-    // Difference to get per-round scores
-    const roundScores=cumScores.map((v,i)=>{
-      if(v===null)return null;
-      if(i===0)return v; // R1 cumulative = R1 score
-      return cumScores[i-1]===null?null:v-cumScores[i-1];
-    });
+    // Per-round to-par scores: use displayValue on each round linescore
+    const roundLs=(c.linescores||[]).filter(ls=>ls.period&&ls.displayValue!==undefined);
+    const roundScores=roundLs.map(ls=>parseScore(ls.displayValue));
 
-    // today = most recent per-round score
+    // Thru: count holes played in the most recent active round
+    let thru='';
+    const lastRound=roundLs[roundLs.length-1];
+    if(lastRound){
+      const holes=(lastRound.linescores||[]).filter(h=>h.value!==undefined&&h.value!==null);
+      if(holes.length>=18)thru='F';
+      else if(holes.length>0)thru=String(holes.length);
+    }
+
+    // today = most recent per-round to-par score
     const today=roundScores.length>0?roundScores[roundScores.length-1]:null;
 
-    // thru from c.thru (ESPN scoreboard provides this directly)
-    const thru=c.thru||'';
-
-    // position
-    const position=(c.position&&c.position.displayName)||'';
+    // position: try various fields ESPN might use
+    const position=(c.position&&c.position.displayName)||(c.rank&&String(c.rank))||
+      (c.sortOrder&&String(c.sortOrder))||'';
 
     return{name,score,status,position,thru,today,roundScores};
   });
