@@ -411,11 +411,10 @@ body.light .ar-bar{background:#e8f5e8}
 <!-- VIEW-ONLY BANNER (hidden by default) -->
 <div class="vob" id="vob" style="display:none">
   <span style="font-size:22px">🔗</span>
-  <div style="flex:1">
+  <div>
     <div class="vob-t">Shared Pool View</div>
-    <div class="vob-s" id="vob-s">Scores auto-update every 15 min via Cloudflare</div>
+    <div class="vob-s" id="vob-s">Scores update automatically every 15 min</div>
   </div>
-  <button class="btn btn-sc btn-sm" id="vob-refresh" onclick="refreshGist()">⟳ Refresh</button>
 </div>
 
 <!-- TABS -->
@@ -2238,10 +2237,7 @@ if(_rawHashVal.startsWith('gist:')){
   init();
 
   function refreshGist(){
-    const btn=document.getElementById('vob-refresh');
     const sub=document.getElementById('vob-s');
-    if(btn){btn.textContent='\u27F3 Loading...';btn.disabled=true;}
-    // Cache-buster ensures we always get the latest version
     fetch('https://api.github.com/gists/'+_gistId+'?_='+Date.now(),{
       headers:{'User-Agent':'GolfPool'}
     })
@@ -2251,14 +2247,10 @@ if(_rawHashVal.startsWith('gist:')){
         if(!content)throw new Error('pool.json not found in gist');
         loadFromPayload(JSON.parse(content));
         init();
-        const ts=state.lastRefresh||'just now';
-        if(sub)sub.textContent='Scores updated: '+ts;
-        if(btn){btn.textContent='\u27F3 Refresh';btn.disabled=false;}
+        const ts=state.lastRefresh;
+        if(sub)sub.textContent=ts?'Scores last updated: '+ts:'Scores update automatically every 15 min';
       })
-      .catch(e=>{
-        showErr('Could not load pool data: '+e.message);
-        if(btn){btn.textContent='\u27F3 Refresh';btn.disabled=false;}
-      });
+      .catch(e=>{showErr('Could not load pool data: '+e.message);});
   }
 
   refreshGist();
