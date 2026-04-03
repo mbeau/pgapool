@@ -316,6 +316,8 @@ body.light .ar-bar{background:#e8f5e8}
   .pg{grid-template-columns:1fr 1fr}
   .sh-row,.man-ac,.sa-ac{flex-wrap:wrap}
   .man-gr{grid-template-columns:1fr}
+  .tourn-lb-hdr,.tourn-lb-row{grid-template-columns:36px 1fr 48px 48px 36px;gap:4px;padding:8px 10px}
+  .tlb-pos{font-size:13px}.tlb-name{font-size:13px}.tlb-score{font-size:14px}.tlb-today{font-size:13px}.tlb-thru{font-size:11px}
 }
 
 /* GIST SHARE */
@@ -741,6 +743,7 @@ function buildSharePayload(){
   const tierNames=state.tiers.map(t=>t.map(p=>p.name.trim()));
   return{v:7,aws:state.aws,tid:state.tid,pn:state.poolName||'The Pool',
     ti:tierNames,scores:state.scores||{},meta:state.meta||null,
+    hist:state.poolHist||{},
     p:state.participants.filter(p=>p.name.trim()).map(p=>({
       n:p.name.trim(),t:p.tiebreaker,pk:p.picks.map(pk=>pk.trim())
     }))};
@@ -1541,9 +1544,8 @@ function makeExpandedPicks(row,isTied,ws){
   let html='';
   if(row.eliminated)html+='<div class="el-no">\u1F6AB Eliminated \u2014 '+row.cutCount+' of '+PICKS+' picks missed the cut after Round 2</div>';
   if(isTied&&row.tbG!==null){
-    html+='<div class="tb-det">\u1F3AF Tiebreaker \u2014 guess: <strong>'+fmtS(row.tbG)+'</strong>';
+    html+='<div class="tb-det">\uD83C\uDFAF Tiebreaker \u2014 guess: <strong>'+fmtS(row.tbG)+'</strong>';
     if(ws!==null)html+=' \u00B7 actual: <strong>'+fmtS(ws)+'</strong> \u00B7 off by <strong>'+(row.tbD!==null?row.tbD:'?')+'</strong>';
-    else html+=' \u00B7 awaiting final winning score';
     html+='</div>';
   }
   html+='<div class="lb-pks">';
@@ -1657,7 +1659,9 @@ function renderTournLb(){
     const todayScore=p.today!==undefined?p.today:(p.roundScores&&p.roundScores.length?p.roundScores[p.roundScores.length-1]:null);
     const thruTxt=p.thru&&p.thru!==''?p.thru:(p.status==='cut'?'CUT':p.status==='wd'?'WD':p.status==='dq'?'DQ':'-');
     const isPick=highlightOn&&pickNames.has(p.name.toLowerCase());
-    return '<div class="tourn-lb-row'+(isPick?' pick':'')+'">'+
+    const projCut=tournLbData.projCut;
+    const isDanger=showCutRisk&&projCut!==null&&p.score!==null&&p.score>projCut-2&&p.score<=projCut+1;
+    return '<div class="tourn-lb-row'+(isPick?' pick':'')+(isDanger?' danger':'')+'">'+
       '<div class="tlb-pos">'+escH(p.position||'-')+'</div>'+
       '<div class="tlb-name">'+escH(p.name)+'</div>'+
       '<div class="tlb-score '+sClass(p.score)+'">'+fmtS(p.score)+'</div>'+
@@ -1666,7 +1670,18 @@ function renderTournLb(){
     '</div>';
   }
 
-  active.forEach(p=>{ html+=rowHtml(p); });
+  let cutInserted=false;
+  active.forEach(p=>{
+    const projCut=tournLbData.projCut;
+    if(!cutInserted&&projCut!==null&&p.score!==null&&p.score>projCut){
+      cutInserted=true;
+      html+='<div class="tlb-proj-cut"><span><b>Projected Cut:</b> '+fmtS(projCut)+'</span><span style="font-size:11px;color:var(--mu)">Top 65 + ties advance</span></div>';
+    }
+    html+=rowHtml(p);
+  });
+  if(!cutInserted&&tournLbData.projCut!==null){
+    html+='<div class="tlb-proj-cut"><span><b>Projected Cut:</b> '+fmtS(tournLbData.projCut)+'</span><span style="font-size:11px;color:var(--mu)">All active players currently make cut</span></div>';
+  }
 
   if(cut.length){
     html+='<div class="tlb-cut" style="color:var(--re)">\u2702\uFE0F Missed Cut \u2014 '+cut.length+' players</div>';
@@ -1740,7 +1755,7 @@ function toggleDark(){
 }
 function applyDark(){
   document.body.classList.toggle('light',!state.darkMode);
-  document.getElementById('dkBtn').textContent=state.darkMode?'\u2600\uFE0F':'\u1F319';
+  document.getElementById('dkBtn').textContent=state.darkMode?'\u2600\uFE0F':'\uD83C\uDF19';
 }
 
 function resetAll(){
@@ -1888,6 +1903,7 @@ function loadFromPayload(payload){
   }
   if(payload.scores&&typeof payload.scores==='object'){state.scores=payload.scores;state.scoreSource='espn';}
   if(payload.meta&&typeof payload.meta==='object'){state.meta=payload.meta;state.lastRefresh=payload.meta.lastRefresh||null;}
+  if(payload.hist&&typeof payload.hist==='object'){state.poolHist=payload.hist;}
 }
 
 // \u2500\u2500 BULK PARTICIPANT IMPORT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
