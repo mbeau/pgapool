@@ -132,7 +132,8 @@ body{background:var(--bg);color:var(--tx);font-family:'Barlow',sans-serif;min-he
 .ps.under{color:var(--gr)}.ps.over{color:var(--re)}
 .pst{font-size:10px;color:var(--mu);letter-spacing:.5px;text-transform:uppercase}
 .bdg{font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;border-radius:4px;padding:2px 5px;text-transform:uppercase}
-.bdg-ct{background:var(--ac);color:#000}.bdg-cu{background:var(--re);color:#fff}.bdg-wd{background:var(--or);color:#fff}
+.bdg-ct{background:var(--ac);color:#000}.bdg-cu{background:var(--re);color:#fff}
+.bdg-danger{background:rgba(224,124,48,.18);color:var(--or);border:1px solid rgba(224,124,48,.4)}.bdg-wd{background:var(--or);color:#fff}
 .rs{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
 .rsc{display:flex;flex-direction:column;align-items:center;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:2px 5px;min-width:30px}
 .rl{font-size:8px;color:var(--mu);text-transform:uppercase}
@@ -306,6 +307,11 @@ body.light .ar-bar{background:#e8f5e8}
 .tlb-sbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:10px 16px;margin-bottom:14px}
 .tourn-lb-row.pick{border-left:3px solid var(--ac)}
 .tourn-lb-row.pick .tlb-name{color:var(--ac)}
+.tourn-lb-row.danger{border-left:3px solid var(--or)}
+.tourn-lb-row.danger .tlb-name{color:var(--or)}
+.tourn-lb-row.pick.danger{border-left:3px solid var(--ac);border-right:3px solid var(--or)}
+.tourn-lb-row.pick.danger .tlb-name{color:var(--ac)}
+.tlb-proj-cut{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-size:13px;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--or);background:rgba(224,124,48,.07);border-top:2px dashed var(--or);border-bottom:2px dashed var(--or);letter-spacing:.5px}
 .hl-on{background:var(--ac)!important;color:#000!important;border-color:var(--ac)!important}
 
 @media(max-width:600px){
@@ -315,6 +321,8 @@ body.light .ar-bar{background:#e8f5e8}
   .pg{grid-template-columns:1fr 1fr}
   .sh-row,.man-ac,.sa-ac{flex-wrap:wrap}
   .man-gr{grid-template-columns:1fr}
+  .tourn-lb-hdr,.tourn-lb-row{grid-template-columns:36px 1fr 48px 48px 36px;gap:4px;padding:8px 10px}
+  .tlb-pos{font-size:13px}.tlb-name{font-size:13px}.tlb-score{font-size:14px}.tlb-today{font-size:13px}.tlb-thru{font-size:11px}
 }
 
 /* GIST SHARE */
@@ -407,7 +415,7 @@ body.light .ar-bar{background:#e8f5e8}
   <span style="font-size:22px">🔗</span>
   <div>
     <div class="vob-t">Shared Pool View</div>
-    <div class="vob-s">Picks loaded from shared link — hit Refresh ESPN to load live scores</div>
+    <div class="vob-s" id="vob-s">Scores update automatically every 15 min</div>
   </div>
 </div>
 
@@ -472,20 +480,21 @@ body.light .ar-bar{background:#e8f5e8}
       <button class="btn btn-sc btn-sm" onclick="toggleManual()">Cancel</button>
     </div>
   </div>
+  <div id="tie-ban" style="display:none"><span id="tie-val"></span></div>
   <div id="lb-container"></div>
 </div>
 
 
 <!-- TIERS PANEL -->
 <div class="panel" id="panel-tiers">
-  <div class="tier-view-sbar">
+  <div class="tier-view-sbar" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
     <div class="tier-view-info" id="tier-view-info"></div>
     <div style="display:flex;gap:6px">
       <button class="odds-btn" id="odds-btn" onclick="toggleOdds()" style="display:none">Show Odds</button>
       <button class="odds-btn" id="picks-sum-btn" onclick="togglePicksSummary()" style="display:none">Show Picks</button>
     </div>
   </div>
-  <div id="tier-picks-summary" style="display:none;margin-bottom:20px;border-bottom:1px solid var(--bd);padding-bottom:20px"></div>
+  <div id="tier-picks-summary" style="display:none;margin-bottom:24px;border-bottom:1px solid var(--bd);padding-bottom:20px"></div>
   <div id="tier-view-container"></div>
 </div>
 
@@ -495,6 +504,7 @@ body.light .ar-bar{background:#e8f5e8}
   <div class="tlb-sbar">
     <div class="si" id="tlb-si">Hit Refresh to load the tournament leaderboard</div>
     <div class="sa">
+      <button class="btn btn-sc btn-sm" id="cut-risk-btn" onclick="toggleCutRisk()" style="display:none">Cut Risk: Off</button>
       <button class="btn btn-sc btn-sm" id="hl-btn" onclick="toggleHighlight()" style="display:none">⭐ Highlight Picks</button>
       <button class="btn btn-pr btn-sm" id="tlb-ref-btn" onclick="refreshTournLb()">⟳ Refresh ESPN</button>
     </div>
@@ -688,12 +698,12 @@ const SCHEDULE=[
 
 // \u2500\u2500 STATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // tiers: array of 6 arrays, each with {name,odds} objects (9 named + wild card slot 10 in tier 6)
-const TIER_SIZE=10; // tiers 1-5: 10 named players; tier 6: 9 named + Wild Card as 10th
+const TIER_SIZE=10; // all tiers: 10 named players; tier 6 also has Wild Card as 11th option
 let state={
   participants:[{id:1,name:'',picks:Array(PICKS).fill(''),tiebreaker:''},{id:2,name:'',picks:Array(PICKS).fill(''),tiebreaker:''}],
   nextId:3, scores:{}, prevScores:{}, meta:null, lastRefresh:null,
   aws:'', tid:'', scoreSource:null, poolHist:{}, darkMode:true, poolName:'The Pool',
-  tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''}))),
+  tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE:TIER_SIZE},()=>({name:'',odds:''}))),
   tiersTourn:'',
   shareMode:'gist'
 };
@@ -723,28 +733,31 @@ function loadSaved(){
       const d=JSON.parse(s);Object.assign(state,d);
       // Migrate: ensure tiers array exists and is correct shape
       if(!state.tiers||state.tiers.length!==PICKS){
-        state.tiers=Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
+        state.tiers=Array.from({length:PICKS},()=>Array.from({length:TIER_SIZE},()=>({name:'',odds:''})));
       }
+      // Ensure every tier has exactly TIER_SIZE slots (fixes old 9-slot T6)
       state.tiers=state.tiers.map(t=>{
-        const sz=ti===PICKS-1?TIER_SIZE-1:TIER_SIZE;
-        while(t.length<sz)t.push({name:'',odds:''});
-        return t.slice(0,sz);
+        while(t.length<TIER_SIZE)t.push({name:'',odds:''});
+        return t.slice(0,TIER_SIZE);
       });
     }
   }catch(e){}
 }
 
 // \u2500\u2500 URL HASH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function buildSharePayload(){
+  const tierNames=state.tiers.map(t=>t.map(p=>p.name.trim()));
+  return{v:7,aws:state.aws,tid:state.tid,pn:state.poolName||'The Pool',
+    ti:tierNames,scores:state.scores||{},meta:state.meta||null,
+    hist:state.poolHist||{},
+    p:state.participants.filter(p=>p.name.trim()).map(p=>({
+      id:p.id,n:p.name.trim(),t:p.tiebreaker,pk:p.picks.map(pk=>pk.trim())
+    }))};
+}
+
 function encodeHash(){
   try{
-    // Only include non-empty tier names for compactness
-    const tierNames=state.tiers.map(t=>t.map(p=>p.name.trim()));
-    const payload={v:5,aws:state.aws,tid:state.tid,pn:state.poolName||'The Pool',
-      ti:tierNames,
-      p:state.participants.filter(p=>p.name.trim()).map(p=>({
-        n:p.name.trim(),t:p.tiebreaker,pk:p.picks.map(pk=>pk.trim())
-      }))};
-    return btoa(encodeURIComponent(JSON.stringify(payload)));
+    return btoa(encodeURIComponent(JSON.stringify(buildSharePayload())));
   }catch(e){return null;}
 }
 
@@ -754,24 +767,7 @@ function decodeHash(hash){
     if(!raw)return null;
     const payload=JSON.parse(decodeURIComponent(atob(raw)));
     if(!payload||!payload.p)return null;
-    // Reconstruct tiers (names only in share link, no odds)
-    let tiers=Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
-    if(payload.ti&&Array.isArray(payload.ti)){
-      tiers=payload.ti.map(t=>{
-        const sz2=ti2===PICKS-1?TIER_SIZE-1:TIER_SIZE;
-        const arr=Array.from({length:sz2},()=>({name:'',odds:''}));
-        (t||[]).forEach((nm,i)=>{if(i<sz2)arr[i]={name:nm||'',odds:''};});
-        return arr;
-      });
-      while(tiers.length<PICKS)tiers.push(Array.from({length:tiers.length===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
-    }
-    return{
-      aws:payload.aws||'', tid:payload.tid||'', poolName:payload.pn||'The Pool', tiers,
-      participants:payload.p.map((p,i)=>({
-        id:i+1,name:p.n,tiebreaker:p.t||'',
-        picks:[...(p.pk||[]),...Array(PICKS).fill('')].slice(0,PICKS)
-      }))
-    };
+    return payload;
   }catch(e){return null;}
 }
 
@@ -794,7 +790,7 @@ function calcPool(picks){
 }
 function normName(s){
   s=s.toLowerCase();
-  [['\xe4','ae'],['\xf6','oe'],['\xfc','ue'],['\xdf','ss'],['\xf8','o'],['\xe5','aa'],
+  [['\xe4','ae'],['\xf6','oe'],['\xfc','ue'],['\xdf','ss'],['\xf8','o'],['\xe5','a'],
    ['\xe6','ae'],['\xe9','e'],['\xe8','e'],['\xea','e'],['\xeb','e'],['\xe1','a'],
    ['\xe0','a'],['\xe2','a'],['\xe3','a'],['\xed','i'],['\xec','i'],['\xee','i'],
    ['\xf3','o'],['\xf2','o'],['\xf4','o'],['\xf5','o'],['\xfa','u'],['\xf9','u'],
@@ -836,55 +832,65 @@ async function fetchESPN(espnId){
   if(!event)throw new Error('No event data found');
   const comp=event.competitions&&event.competitions[0];
   const isComplete=!!(comp&&comp.status&&comp.status.type&&comp.status.type.completed);
-  const roundNum=comp&&comp.status&&comp.status.period||null;
+  // comp.status.period is often null \u2014 derive roundNum from max period in linescores
+  let roundNum=comp&&comp.status&&comp.status.period||null;
+  if(!roundNum){
+    const allLs=(comp&&comp.competitors||[]).flatMap(c=>c.linescores||[]);
+    const maxPeriod=allLs.reduce((m,ls)=>Math.max(m,Number(ls.period)||0),0);
+    if(maxPeriod>0)roundNum=maxPeriod;
+  }
+  roundNum=roundNum?Number(roundNum):null;
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
-  let rsMap={};
-  try{
-    const dr=await fetch('https://site.api.espn.com/apis/site/v2/sports/golf/pga/summary?event='+espnId);
-    if(dr.ok){
-      const dd=await dr.json();
-      const comps=(dd&&dd.competition&&dd.competition.competitors)||(dd&&dd.competitions&&dd.competitions[0]&&dd.competitions[0].competitors)||[];
-      // Determine course par from the data so we can convert raw strokes to to-par
-      // ESPN linescores return raw stroke counts (e.g. 71) not to-par values (e.g. +1)
-      // We detect this by checking if values look like raw strokes (typically 60-85)
-      // and convert using course par (almost always 70, 71, or 72)
-      let coursePar = 72; // default
-      // Try to find par from the competition data
-      try{
-        const compData = dd&&dd.competition||dd&&dd.competitions&&dd.competitions[0];
-        if(compData&&compData.course&&compData.course.par) coursePar=compData.course.par;
-        else if(compData&&compData.venue&&compData.venue.par) coursePar=compData.venue.par;
-      }catch(e){}
-      comps.forEach(c=>{
-        const id=(c.athlete&&c.athlete.id)||c.id;
-        if(!id)return;
-        const raw=(c.linescores||[]).map(ls=>parseScore(ls.value));
-        // If values look like raw stroke counts (all between 55 and 95), convert to to-par
-        const looksLikeStrokes=raw.length>0&&raw.every(v=>v!==null&&v>40);
-        rsMap[id]=looksLikeStrokes?raw.map(v=>v===null?null:v-coursePar):raw;
-      });
-    }
-  }catch(e){}
-  const players=(comp&&comp.competitors||[]).map(c=>{
+
+  // ESPN competitor keys: id, uid, type, order, athlete, score, linescores, statistics
+  // - order: leaderboard rank (ties share same value)
+  // - linescores: [{displayValue:"-6", period:1, linescores:[holes...]}, ...]
+  const allComps=comp&&comp.competitors||[];
+  const orderCounts={};
+  allComps.forEach(c=>{const o=c.order;if(o!==undefined)orderCounts[o]=(orderCounts[o]||0)+1;});
+
+  const players=allComps.map(c=>{
     const a=c.athlete||{};
-    const name=a.displayName||((a.firstName||'')+' '+(a.lastName||'')).trim();
+    const name=a.displayName||a.fullName||'';
     const score=parseScore(c.score);
-    const st=(c.status||'').toLowerCase();
-    let status='active';
-    if(st.includes('cut')||c.didNotFinish)status='cut';
-    else if(st.includes('wd')||st.includes('withdrew'))status='wd';
-    else if(st.includes('dq'))status='dq';
-    else if(isComplete)status='complete';
-    const aid=(a.id)||c.id;
-    const roundScores=rsMap[aid]||(c.linescores||[]).map(ls=>parseScore(ls.value))||[];
-    return{name,score,status,position:(c.position&&c.position.displayName)||'',thru:c.thru||'',roundScores};
+    // Filter to rounds that have actually started (at least 1 hole played)
+    // ESPN adds empty placeholder entries for future rounds with 0 holes
+    const roundLs=(c.linescores||[]).filter(ls=>
+      ls.period&&
+      ls.displayValue!==undefined&&
+      ls.displayValue!==''&&
+      (ls.linescores||[]).length>0
+    );
+    const roundScores=roundLs.map(ls=>parseScore(ls.displayValue));
+    // today = score for the CURRENT round only (not a prior finished round)
+    // If the player's most recent round period < current roundNum, they haven't started today
+    const lastRoundPeriod=roundLs.length>0?roundLs[roundLs.length-1].period:0;
+    const hasStartedCurrentRound=lastRoundPeriod>=roundNum;
+    let thru='';
+    const lastRound=roundLs[roundLs.length-1];
+    if(lastRound&&hasStartedCurrentRound){
+      const holes=(lastRound.linescores||[]).filter(h=>h.value!==undefined&&h.value!==null&&h.value!=='');
+      thru=holes.length>=18?'F':(holes.length>0?String(holes.length):'');
+    }
+    const today=hasStartedCurrentRound&&roundScores.length>0?roundScores[roundScores.length-1]:null;
+    const ord=c.order;
+    const position=ord!==undefined?(orderCounts[ord]>1?'T'+ord:String(ord)):'';
+    const status=isComplete?'complete':'active';
+    return{name,score,status,position,thru,today,roundScores};
   });
+
   let aws=null;
   if(isComplete){
-    const cs=players.filter(p=>p.status==='complete'&&p.score!==null).map(p=>p.score);
+    const cs=players.filter(p=>p.score!==null).map(p=>p.score);
     if(cs.length)aws=Math.min.apply(null,cs);
   }
-  return{tournament:event.name,round,isComplete,actualWinningScore:aws,players};
+  let projCut=null;
+  if(roundNum===2&&!isComplete){
+    const active=players.filter(p=>!['cut','wd','dq'].includes(p.status)&&p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
+    if(active.length>=65)projCut=active[64];
+    else if(active.length>0)projCut=active[active.length-1];
+  }
+  return{tournament:event.name,round,roundNum,isComplete,actualWinningScore:aws,projCut,players};
 }
 
 // \u2500\u2500 REFRESH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
@@ -902,11 +908,11 @@ async function doRefresh(){
     allNames.forEach(name=>{
       const found=findPlayer(name,result.players);
       if(found){
-        matched[name]={score:found.score,status:found.status,position:found.position,thru:found.thru,roundScores:found.roundScores||[]};
+        matched[name]={score:found.score,status:found.status,position:found.position,thru:found.thru,today:found.today!==undefined?found.today:null,roundScores:found.roundScores||[]};
         if(found.status==='wd')wd.push(name);
       }else{
         notFound.push(name);
-        matched[name]={score:null,status:'unknown',position:'',thru:'',roundScores:[]};
+        matched[name]={score:null,status:'unknown',position:'',thru:'',today:null,roundScores:[]};
       }
     });
     state.prevScores=JSON.parse(JSON.stringify(state.scores));
@@ -915,7 +921,7 @@ async function doRefresh(){
     const h=now.getHours(),m=now.getMinutes(),ampm=h>=12?'PM':'AM';
     const refreshTime=(h%12||12)+':'+(m<10?'0':'')+m+' '+ampm;
     state.lastRefresh=refreshTime;
-    state.meta={tournament:result.tournament,round:result.round,isComplete:result.isComplete,lastRefresh:refreshTime};
+    state.meta={tournament:result.tournament,round:result.round,roundNum:result.roundNum,isComplete:result.isComplete,projCut:result.projCut,lastRefresh:refreshTime};
     state.scoreSource='espn';
     if(result.isComplete&&result.actualWinningScore!=null)state.aws=String(result.actualWinningScore);
     // Pool history
@@ -930,14 +936,12 @@ async function doRefresh(){
     });
     if(notFound.length){
       const b=document.getElementById('un-banner');
-      b.innerHTML='<strong>\u26A0\uFE0F '+notFound.length+' player'+(notFound.length>1?'s':'')+' not found in ESPN data:</strong> '+notFound.join(', ')+' \u2014 check spelling or use Manual entry.';
-      b.style.display='block';
-    }else{document.getElementById('un-banner').style.display='none';}
+      if(b){b.innerHTML='<strong>\u26A0\uFE0F '+notFound.length+' player'+(notFound.length>1?'s':'')+' not found in ESPN data:</strong> '+notFound.join(', ')+' \u2014 check spelling or use Manual entry.';b.style.display='block';}
+    }else{const b=document.getElementById('un-banner');if(b)b.style.display='none';}
     if(wd.length){
       const b=document.getElementById('wd-banner');
-      b.innerHTML='<strong>\u26A0\uFE0F Withdrawal Alert</strong>'+wd.join(', ')+(wd.length===1?' has':' have')+' withdrawn. Check with admin.';
-      b.style.display='block';
-    }else{document.getElementById('wd-banner').style.display='none';}
+      if(b){b.innerHTML='<strong>\u26A0\uFE0F Withdrawal Alert</strong> '+wd.join(', ')+(wd.length===1?' has':' have')+' withdrawn. Check with admin.';b.style.display='block';}
+    }else{const b=document.getElementById('wd-banner');if(b)b.style.display='none';}
     save();
     renderLb();
     updateStatusBar();
@@ -1182,7 +1186,7 @@ function updateTierPlayer(ti,pi,field,val){
 
 function clearTiers(){
   if(!confirm('Clear all tier data?'))return;
-  state.tiers=Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
+  state.tiers=Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE:TIER_SIZE},()=>({name:'',odds:''})));
   state.tiersTourn='';
   shareUrl=null;save();
   renderTierSetup();renderParticipants();renderTierView();
@@ -1289,7 +1293,7 @@ function renderTierView(){
   const hasOddsData=state.tiers.some(t=>t.some(p=>p.odds&&p.odds.trim()));
   const totalPlayers=state.tiers.reduce((s,t)=>s+t.filter(p=>p.name.trim()).length,0);
   const tourn=state.tiersTourn||SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'';
-  if(infoEl)infoEl.innerHTML=(tourn?'<b>'+escH(tourn)+'</b> \u00B7 ':'')+totalPlayers+' players across 6 tiers';
+  if(infoEl)infoEl.innerHTML=tourn?'<b>'+escH(tourn)+'</b>':'';
   if(oddsBtn){oddsBtn.style.display=hasOddsData?'':'none';oddsBtn.textContent=showOdds?'Hide Odds':'Show Odds';oddsBtn.classList.toggle('on',showOdds);}
   const hasParts=state.participants.filter(p=>p.name.trim()).length>0;
   if(psBtn){psBtn.style.display=hasParts?'':'none';psBtn.textContent=showPicksSumInTiers?'Hide Picks':'Show Picks';psBtn.classList.toggle('on',showPicksSumInTiers);}
@@ -1360,8 +1364,8 @@ function onTournChange(){
   const inf=document.getElementById('tsel-inf');
   inf.innerHTML=selT?'Scores from: <b>ESPN \u00B7 '+selT.name+'</b>':'';
   updateTournBanner();updateStatusBar();updateShareDisplay();
-  document.getElementById('un-banner').style.display='none';
-  document.getElementById('wd-banner').style.display='none';
+  const _ub=document.getElementById('un-banner');if(_ub)_ub.style.display='none';
+  const _wb=document.getElementById('wd-banner');if(_wb)_wb.style.display='none';
 }
 
 function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1422,6 +1426,7 @@ function buildRows(){
       if(!s){const e=Object.entries(state.scores).find(([k])=>k.toLowerCase()===nm.toLowerCase());if(e)s=e[1];}
       return{name:nm,score:s&&s.score!==undefined?s.score:null,
         status:s&&s.status||'unknown',position:s&&s.position||'',thru:s&&s.thru||'',
+        today:s&&s.today!==undefined?s.today:null,
         cut:['cut','wd','dq'].includes(s&&s.status),wd:s&&s.status==='wd',
         tierColor:TC[pi]||'#5a6a7e',roundScores:s&&s.roundScores||[]};
     }).filter(Boolean);
@@ -1459,9 +1464,10 @@ function renderLb(){
   }
   const tieBan=document.getElementById('tie-ban');
   if(tiedIds.size>0){
-    tieBan.style.display='flex';
-    document.getElementById('tie-val').textContent=ws!==null?'Actual: '+fmtS(ws):'Winning score TBD';
-  }else tieBan.style.display='none';
+    if(tieBan)tieBan.style.display='flex';
+    const tv=document.getElementById('tie-val');
+    if(tv)tv.textContent=ws!==null?'Actual: '+fmtS(ws):'';
+  }else if(tieBan)tieBan.style.display='none';
 
   // Prev pool scores for movement
   const prevPool={};
@@ -1491,7 +1497,7 @@ function renderLb(){
     });
   }
   if(active.length)addSection('Active \u00B7 '+active.length+' participants',active,false);
-  if(elim.length)addSection('\u1F6AB Eliminated \u00B7 '+elim.length+' participants',elim,true);
+  if(elim.length)addSection('\uD83D\uDEAB Eliminated \u00B7 '+elim.length+' participants',elim,true);
   container.appendChild(lb);
 }
 
@@ -1529,7 +1535,7 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
   }
 
   // Rank icon
-  const rankIcon=row.eliminated?'\u2715':rank===1?'\u1F947':rank===2?'\u1F948':rank===3?'\u1F949':rank;
+  const rankIcon=row.eliminated?'\u2715':rank===1?'\uD83E\uDD47':rank===2?'\uD83E\uDD48':rank===3?'\uD83E\uDD49':rank;
   const scCls='lb-sc '+(row.eliminated?'elim-sc':row.poolScore===null?'pending':sClass(row.poolScore));
   const scTxt=row.eliminated?'ELIM':row.poolScore===null?'\u2014':fmtS(row.poolScore);
   const preview=row.picks.filter(Boolean).slice(0,3).join(', ');
@@ -1562,17 +1568,19 @@ function makeExpandedPicks(row,isTied,ws){
   let html='';
   if(row.eliminated)html+='<div class="el-no">\u1F6AB Eliminated \u2014 '+row.cutCount+' of '+PICKS+' picks missed the cut after Round 2</div>';
   if(isTied&&row.tbG!==null){
-    html+='<div class="tb-det">\u1F3AF Tiebreaker \u2014 guess: <strong>'+fmtS(row.tbG)+'</strong>';
+    html+='<div class="tb-det">\uD83C\uDFAF Tiebreaker \u2014 guess: <strong>'+fmtS(row.tbG)+'</strong>';
     if(ws!==null)html+=' \u00B7 actual: <strong>'+fmtS(ws)+'</strong> \u00B7 off by <strong>'+(row.tbD!==null?row.tbD:'?')+'</strong>';
-    else html+=' \u00B7 awaiting final winning score';
     html+='</div>';
   }
   html+='<div class="lb-pks">';
   row.pd.forEach((pk,j)=>{
     const isCt=row.ctNames.has(pk.name);
     let badge='';
+    const projCut=state.meta&&state.meta.projCut!==null&&state.meta.projCut!==undefined?state.meta.projCut:null;
+    const atRisk=projCut!==null&&!pk.cut&&pk.score!==null&&state.meta&&state.meta.roundNum===2&&pk.score>projCut-2&&pk.score<=projCut+1;
     if(pk.wd)badge='<span class="bdg bdg-wd">WD</span>';
     else if(pk.cut)badge='<span class="bdg bdg-cu">CUT</span>';
+    else if(atRisk)badge='<span class="bdg bdg-danger">CUT RISK</span>';
     else if(isCt)badge='<span class="bdg bdg-ct">Counting</span>';
     let rsHtml='';
     if(pk.roundScores&&pk.roundScores.length){
@@ -1581,7 +1589,19 @@ function makeExpandedPicks(row,isTied,ws){
       for(let ri=pk.roundScores.length;ri<4;ri++)rsHtml+='<div class="rsc"><span class="rl">R'+(ri+1)+'</span><span class="rv pending">\u2014</span></div>';
       rsHtml+='</div>';
     }
-    const st=pk.thru?'Thru '+pk.thru:pk.status==='notstarted'?'Not started':pk.status==='notinfield'?'Not in field':pk.status;
+    // Status text: today===null means hasn't started current round
+    let st='';
+    if(pk.cut){st='Missed cut';}
+    else if(pk.wd){st='WD';}
+    else if(pk.today!==null&&pk.today!==undefined){
+      // Has started today's round
+      const thruNum=parseInt(pk.thru,10);
+      if(pk.thru==='F'||thruNum>=18){st='Finished';}
+      else if(pk.thru){st='Thru '+pk.thru;}
+      else{st='In progress';}
+    }else if(pk.score!==null){
+      st='Not started';
+    }else{st='';}
     html+=
       '<div class="pc'+(isCt?' ct':'')+'">'+
         '<div class="pt-tier" style="color:'+pk.tierColor+'">T'+(j+1)+'</div>'+
@@ -1639,7 +1659,7 @@ function renderTournLb(){
   if(hlBtn)hlBtn.style.display='';
   const crBtn=document.getElementById('cut-risk-btn');
   if(crBtn){
-    const isR2=tournLbData.projCut!==null||(tournLbData.roundNum===2);
+    const isR2=(tournLbData.roundNum===2)||(tournLbData.projCut!==null)||(state.meta&&state.meta.roundNum===2);
     crBtn.style.display=isR2?'':'none';
     crBtn.textContent=showCutRisk?'Cut Risk: On':'Cut Risk: Off';
     crBtn.classList.toggle('hl-on',showCutRisk);
@@ -1657,13 +1677,15 @@ function renderTournLb(){
 
   let html='<div class="tourn-lb-wrap"><div class="tourn-lb">';
   // Header
-  html+='<div class="tourn-lb-hdr"><span>Pos</span><span>Player</span><span style="text-align:right">Total</span><span style="text-align:right">Today</span><span style="text-align:right">Thru</span></div>';
+  html+='<div class="tourn-lb-hdr"><span class="tlb-pos">Pos</span><span class="tlb-name">Player</span><span class="tlb-score" style="font-size:11px;font-weight:700">Total</span><span class="tlb-today" style="font-size:11px;font-weight:700">Today</span><span class="tlb-thru" style="font-size:11px;font-weight:700">Thru</span></div>';
 
   function rowHtml(p){
-    const todayScore=p.roundScores&&p.roundScores.length?p.roundScores[p.roundScores.length-1]:null;
-    const thruTxt=p.thru?p.thru:(p.status==='cut'?'CUT':p.status==='wd'?'WD':p.status==='dq'?'DQ':'');
+    const todayScore=p.today!==undefined?p.today:(p.roundScores&&p.roundScores.length?p.roundScores[p.roundScores.length-1]:null);
+    const thruTxt=p.thru&&p.thru!==''?p.thru:(p.status==='cut'?'CUT':p.status==='wd'?'WD':p.status==='dq'?'DQ':'-');
     const isPick=highlightOn&&pickNames.has(p.name.toLowerCase());
-    return '<div class="tourn-lb-row'+(isPick?' pick':'')+'">'+
+    const projCut=tournLbData.projCut;
+    const isDanger=showCutRisk&&projCut!==null&&p.score!==null&&p.score>projCut-2&&p.score<=projCut+1;
+    return '<div class="tourn-lb-row'+(isPick?' pick':'')+(isDanger?' danger':'')+'">'+
       '<div class="tlb-pos">'+escH(p.position||'-')+'</div>'+
       '<div class="tlb-name">'+escH(p.name)+'</div>'+
       '<div class="tlb-score '+sClass(p.score)+'">'+fmtS(p.score)+'</div>'+
@@ -1672,7 +1694,18 @@ function renderTournLb(){
     '</div>';
   }
 
-  active.forEach(p=>{ html+=rowHtml(p); });
+  let cutInserted=false;
+  active.forEach(p=>{
+    const projCut=tournLbData.projCut;
+    if(showCutRisk&&!cutInserted&&projCut!==null&&p.score!==null&&p.score>projCut){
+      cutInserted=true;
+      html+='<div class="tlb-proj-cut"><span><b>Projected Cut: '+fmtS(projCut)+'</b></span><span style="font-size:11px">Top 65 + ties advance</span></div>';
+    }
+    html+=rowHtml(p);
+  });
+  if(showCutRisk&&!cutInserted&&tournLbData.projCut!==null){
+    html+='<div class="tlb-proj-cut"><span><b>Projected Cut: '+fmtS(tournLbData.projCut)+'</b></span><span style="font-size:11px">All active players make cut</span></div>';
+  }
 
   if(cut.length){
     html+='<div class="tlb-cut" style="color:var(--re)">\u2702\uFE0F Missed Cut \u2014 '+cut.length+' players</div>';
@@ -1713,7 +1746,7 @@ function updateTournBanner(){
     if(state.scoreSource){
       sb.style.display='';
       sb.className='src-b '+(state.scoreSource==='espn'?'src-espn':'src-man');
-      sb.textContent=state.scoreSource==='espn'?'\u1F4E1 ESPN Live':'\u270F\uFE0F Manual';
+      sb.textContent=state.scoreSource==='espn'?'\uD83D\uDCE1 ESPN Live':'\u270F\uFE0F Manual';
     }else sb.style.display='none';
     if(!isViewOnly)document.getElementById('change-lnk').style.display='';
   }else if(!isViewOnly){
@@ -1746,14 +1779,14 @@ function toggleDark(){
 }
 function applyDark(){
   document.body.classList.toggle('light',!state.darkMode);
-  document.getElementById('dkBtn').textContent=state.darkMode?'\u2600\uFE0F':'\u1F319';
+  document.getElementById('dkBtn').textContent=state.darkMode?'\u2600\uFE0F':'\uD83C\uDF19';
 }
 
 function resetAll(){
   if(!confirm('Clear all pool data?'))return;
   state={participants:[{id:1,name:'',picks:Array(PICKS).fill(''),tiebreaker:''},{id:2,name:'',picks:Array(PICKS).fill(''),tiebreaker:''}],
     nextId:3,scores:{},prevScores:{},meta:null,lastRefresh:null,aws:'',tid:'',scoreSource:null,poolHist:{},darkMode:state.darkMode,
-    tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''}))),tiersTourn:''};
+    tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE:TIER_SIZE},()=>({name:'',odds:''}))),tiersTourn:''};
   shareUrl=null;expandedId=null;
   save();init();
 }
@@ -1800,12 +1833,17 @@ async function genShare(){
   try{
     if(shareMode==='gist'){await genShareGist();}
     else{genShareUrl();}
-  }finally{btn.disabled=false;}
+  }catch(e){
+    showErr('Share error: '+e.message);
+  }finally{
+    btn.disabled=false;
+    if(btn.textContent==='Generating...')btn.textContent='Generate Link';
+  }
 }
 
 async function genShareGist(){
   const tok=loadToken()||document.getElementById('gh-token-in').value.trim();
-  if(!tok){showErr('Enter your GitHub token in the Share section first.');document.getElementById('sh-btn').textContent='Generate Link';return;}
+  if(!tok){showErr('Enter your GitHub token in the Share section first.');return;}
   const payload=buildSharePayload();
   const selT=SCHEDULE.find(t=>t.id===state.tid);
   const body={
@@ -1813,24 +1851,23 @@ async function genShareGist(){
     public:false,
     files:{'pool.json':{content:JSON.stringify(payload)}}
   };
-  try{
-    let r,gistData;
-    if(currentGistId){
-      r=await fetch('https://api.github.com/gists/'+currentGistId,{method:'PATCH',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
-    }else{
-      r=await fetch('https://api.github.com/gists',{method:'POST',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
-    }
-    if(!r.ok){const err=await r.json();throw new Error(err.message||'GitHub API error '+r.status);}
-    gistData=await r.json();
-    currentGistId=gistData.id;
-    saveGistId(currentGistId,state.tid);
-    shareUrl=window.location.origin+window.location.pathname+'#gist:'+gistData.id;
-    updateShareDisplay();
-    copyToClipboard(shareUrl,()=>flashCopied());
-  }catch(e){
-    showErr('GitHub Gist error: '+e.message);
-    document.getElementById('sh-btn').textContent='Generate Link';
+  let r,gistData;
+  if(currentGistId){
+    r=await fetch('https://api.github.com/gists/'+currentGistId,{method:'PATCH',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
+  }else{
+    r=await fetch('https://api.github.com/gists',{method:'POST',headers:{Authorization:'token '+tok,'Content-Type':'application/json','User-Agent':'GolfPool'},body:JSON.stringify(body)});
   }
+  if(!r.ok){
+    let msg='GitHub API error '+r.status;
+    try{const err=await r.json();msg=err.message||msg;}catch(e){}
+    throw new Error(msg);
+  }
+  gistData=await r.json();
+  currentGistId=gistData.id;
+  saveGistId(currentGistId,state.tid);
+  shareUrl=window.location.origin+window.location.pathname+'#gist:'+gistData.id;
+  updateShareDisplay();
+  copyToClipboard(shareUrl,()=>flashCopied());
 }
 
 function genShareUrl(){
@@ -1872,16 +1909,20 @@ async function autoSaveGist(){
 }
 
 function loadFromPayload(payload){
-  state.participants=payload.p.map((p,i)=>({
-    id:i+1,name:p.n,tiebreaker:p.t||'',
-    picks:[...(p.pk||[]),...Array(PICKS).fill('')].slice(0,PICKS)
-  }));
+  let _nextId=1;
+  state.participants=payload.p.map((p,i)=>{
+    const id=p.id||i+1;
+    if(id>=_nextId)_nextId=id+1;
+    return{id,name:p.n,tiebreaker:p.t||'',
+      picks:[...(p.pk||[]),...Array(PICKS).fill('')].slice(0,PICKS)};
+  });
+  state.nextId=_nextId;
   state.aws=payload.aws||'';
   state.tid=payload.tid||'';
   state.poolName=payload.pn||'The Pool';
   if(payload.ti&&Array.isArray(payload.ti)){
     state.tiers=payload.ti.map((t,ti2)=>{
-      const sz=ti2===PICKS-1?TIER_SIZE-1:TIER_SIZE;
+      const sz=ti2===PICKS-1?TIER_SIZE:TIER_SIZE;
       const arr=Array.from({length:sz},()=>({name:'',odds:''}));
       (t||[]).forEach((nm,i)=>{if(i<sz)arr[i]={name:nm||'',odds:''};});
       return arr;
@@ -1890,6 +1931,7 @@ function loadFromPayload(payload){
   }
   if(payload.scores&&typeof payload.scores==='object'){state.scores=payload.scores;state.scoreSource='espn';}
   if(payload.meta&&typeof payload.meta==='object'){state.meta=payload.meta;state.lastRefresh=payload.meta.lastRefresh||null;}
+  if(payload.hist&&typeof payload.hist==='object'){state.poolHist=payload.hist;}
 }
 
 // \u2500\u2500 BULK PARTICIPANT IMPORT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
@@ -1950,22 +1992,27 @@ function importTiersFromExcel(){
   const raw=ta.value.trim();
   if(!raw){if(st){st.textContent='Nothing to import.';st.className='bulk-st err';}return;}
   const lines=raw.split('\n').map(l=>l.replace(/\r$/,''));
-  let startRow=0;
+  // Detect and skip header row
   const firstCols=(lines[0]||'').split('\t');
   const firstCell=(firstCols[0]||'').trim().toLowerCase();
-  if(firstCell===''||firstCell.startsWith('t1')||firstCell.startsWith('tier')||firstCell==='name'||firstCell==='player')startRow=1;
-  const newTiers=Array.from({length:PICKS},(_,ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE-1:TIER_SIZE},()=>({name:'',odds:''})));
+  const startRow=(firstCell===''||firstCell.startsWith('t1')||firstCell.startsWith('tier')||firstCell==='name'||firstCell==='player')?1:0;
   const dataRows=lines.slice(startRow).filter(l=>l.trim());
-  const hasOddsCols=dataRows.length>0&&dataRows[0].split('\t').length>PICKS;
+  if(!dataRows.length){if(st){st.textContent='No data rows found.';st.className='bulk-st err';}return;}
+  // Format: each column is a tier, each row is a player slot
+  // Col 0 = T1 names, Col 1 = T2 names ... Col 5 = T6 names
+  // OR with odds: Col 0 = T1 names, Col 1 = T1 odds, Col 2 = T2 names, Col 3 = T2 odds ...
+  const firstRowCols=dataRows[0].split('\t').length;
+  const hasOdds=firstRowCols>=PICKS*2;
+  const newTiers=Array.from({length:PICKS},(_,ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE:TIER_SIZE},()=>({name:'',odds:''})));
   const tierCounts=Array(PICKS).fill(0);
   let total=0;
   dataRows.forEach(line=>{
     const cols=line.split('\t');
     for(let ti=0;ti<PICKS;ti++){
-      const maxP=ti===PICKS-1?TIER_SIZE-1:TIER_SIZE;
+      const maxP=ti===PICKS-1?TIER_SIZE:TIER_SIZE;
       if(tierCounts[ti]>=maxP)continue;
-      const nameIdx=hasOddsCols?ti*2:ti;
-      const oddsIdx=hasOddsCols?ti*2+1:-1;
+      const nameIdx=hasOdds?ti*2:ti;
+      const oddsIdx=hasOdds?ti*2+1:-1;
       const nm=(cols[nameIdx]||'').trim();
       if(!nm)continue;
       const odds=oddsIdx>=0?(cols[oddsIdx]||'').trim():'';
@@ -1973,7 +2020,7 @@ function importTiersFromExcel(){
       tierCounts[ti]++;total++;
     }
   });
-  if(total===0){if(st){st.textContent='No players found. Check column order.';st.className='bulk-st err';}return;}
+  if(total===0){if(st){st.textContent='No players found. Check format: one tier per column, one player per row.';st.className='bulk-st err';}return;}
   state.tiers=newTiers;
   state.tiersTourn=SCHEDULE.find(t=>t.id===state.tid)&&SCHEDULE.find(t=>t.id===state.tid).name||'';
   shareUrl=null;save();renderTierSetup();renderTierView();renderCopyFormLists();validatePicks();checkTierPickMismatch();
@@ -2174,6 +2221,9 @@ function init(){
     document.getElementById('man-tog').style.display='none';
     document.getElementById('edit-btn').style.display='none';
     document.getElementById('ar-btn').style.display='none';
+    document.getElementById('ref-btn').style.display='none';
+    const tlbRef=document.getElementById('tlb-ref-btn');
+    if(tlbRef)tlbRef.style.display='none';
     document.getElementById('vob').style.display='flex';
   }
 }
@@ -2186,15 +2236,25 @@ if(_rawHashVal.startsWith('gist:')){
   const _gistId=_rawHashVal.slice(5);
   loadSaved();
   init();
-  fetch('https://api.github.com/gists/'+_gistId,{headers:{'User-Agent':'GolfPool'}})
-    .then(r=>{if(!r.ok)throw new Error('Gist not found ('+r.status+')');return r.json();})
-    .then(gd=>{
-      const content=gd.files&&gd.files['pool.json']&&gd.files['pool.json'].content;
-      if(!content)throw new Error('pool.json not found in gist');
-      loadFromPayload(JSON.parse(content));
-      init();
+
+  function refreshGist(){
+    const sub=document.getElementById('vob-s');
+    fetch('https://api.github.com/gists/'+_gistId+'?_='+Date.now(),{
+      headers:{'User-Agent':'GolfPool'}
     })
-    .catch(e=>{showErr('Could not load pool data: '+e.message);});
+      .then(r=>{if(!r.ok)throw new Error('Gist not found ('+r.status+')');return r.json();})
+      .then(gd=>{
+        const content=gd.files&&gd.files['pool.json']&&gd.files['pool.json'].content;
+        if(!content)throw new Error('pool.json not found in gist');
+        loadFromPayload(JSON.parse(content));
+        init();
+        const ts=state.lastRefresh;
+        if(sub)sub.textContent=ts?'Scores last updated: '+ts:'Scores update automatically every 15 min';
+      })
+      .catch(e=>{showErr('Could not load pool data: '+e.message);});
+  }
+
+  refreshGist();
 }else{
   const hashData=decodeHash(_rawHash);
   if(hashData){
