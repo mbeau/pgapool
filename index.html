@@ -370,6 +370,7 @@ body.light .ar-bar{background:#e8f5e8}
 .cf-tier-lbl{font-size:11px;color:var(--mu);letter-spacing:.5px}
 .cf-btn.copied .cf-tier-lbl{color:#000}
 .cf-hint{font-size:12px;color:var(--mu);line-height:1.6}
+.wc-name-in{margin-top:4px;width:100%}
 /* TIER IMPORT */
 .tier-import-section{border-top:1px solid var(--bd);padding-top:14px;margin-top:4px}
 /* SHOW PICKS IN TIERS */
@@ -585,6 +586,19 @@ body.light .ar-bar{background:#e8f5e8}
       <div class="ws-hi" id="ws-hi">Not set</div>
     </div>
 
+    <div class="box box-t">
+      <h3>&#9986;&#65039; Cut Size</h3>
+      <p>Players who make the cut. Standard PGA: <strong>65</strong>. Masters: <strong>50</strong>. Set before R2 for correct projected cut line.</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+        <input type="number" class="ws-in" id="cut-size-in" placeholder="65" min="1" max="100" oninput="onCutSizeChange()" style="width:80px">
+        <span style="font-size:13px;color:var(--mu)" id="cut-size-hi">Top 65 + ties make cut</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-sc btn-sm" onclick="setCutSize(65)">PGA (65)</button>
+        <button class="btn btn-sc btn-sm" onclick="setCutSize(50)">Masters (50)</button>
+      </div>
+    </div>
+
     <div class="box box-im">
       <h3>📋 Import from Google Form</h3>
       <p>Collect picks privately using Google Forms. In Google Sheets: select all, copy, paste below. See pga-pool-guide.html for full instructions. <a href="#" class="im-tog" onclick="toggleImport(event)">Show importer</a></p>
@@ -705,7 +719,8 @@ let state={
   aws:'', tid:'', scoreSource:null, poolHist:{}, darkMode:true, poolName:'The Pool',
   tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE:TIER_SIZE},()=>({name:'',odds:''}))),
   tiersTourn:'',
-  shareMode:'gist'
+  shareMode:'gist',
+  cutSize:65
 };
 let isViewOnly=false;
 let shareUrl=null;
@@ -886,8 +901,9 @@ async function fetchESPN(espnId){
   }
   let projCut=null;
   if(roundNum===2&&!isComplete){
+    const cutN=state&&state.cutSize&&state.cutSize>0?state.cutSize:65;
     const active=players.filter(p=>!['cut','wd','dq'].includes(p.status)&&p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
-    if(active.length>=65)projCut=active[64];
+    if(active.length>=cutN)projCut=active[cutN-1];
     else if(active.length>0)projCut=active[active.length-1];
   }
   return{tournament:event.name,round,roundNum,isComplete,actualWinningScore:aws,projCut,players};
@@ -1334,6 +1350,12 @@ function updateTb(id,v){
 function updatePick(id,i,v){
   const p=state.participants.find(p=>p.id===id);if(p){p.picks[i]=v;shareUrl=null;save();}
 }
+function onT6Change(id,i,v){
+  const p=state.participants.find(p=>p.id===id);if(!p)return;
+  // Wild Card sentinel selected \u2014 clear value so text input appears
+  if(v==='\uD83C\uDCCF'){p.picks[i]='';shareUrl=null;save();renderParticipants();}
+  else{p.picks[i]=v;shareUrl=null;save();renderParticipants();}
+}
 
 function onPoolNameChange(){
   state.poolName=document.getElementById('pool-name-in').value||'The Pool';
@@ -1349,6 +1371,21 @@ function updateHeaderTitle(){
   document.title=(state.poolName||'The Pool')+' \u2014 Leaderboard';
 }
 
+function onCutSizeChange(){
+  const v=parseInt(document.getElementById('cut-size-in').value);
+  if(v>0&&v<=100){state.cutSize=v;save();updateCutSizeDisplay();}
+}
+function setCutSize(n){
+  state.cutSize=n;
+  const el=document.getElementById('cut-size-in');
+  if(el)el.value=n;
+  save();updateCutSizeDisplay();
+}
+function updateCutSizeDisplay(){
+  const n=state.cutSize||65;
+  const el=document.getElementById('cut-size-hi');
+  if(el)el.textContent='Top '+n+' + ties make cut';
+}
 function onAwsChange(){
   state.aws=document.getElementById('aws-in').value;
   save();
@@ -1384,11 +1421,16 @@ function renderParticipants(){
       if(tierPlayers.length>0){
         // Dropdown mode \u2014 tiers are loaded
         const opts=tierPlayers.map(nm=>'<option value="'+escH(nm)+'"'+(curVal===nm?' selected':'')+'>'+escH(nm)+'</option>').join('');
-        const wcOpt=isLastTier?'<option value="Wild Card"'+(curVal==='Wild Card'?' selected':'')+'>\u1F0CF Wild Card \u2014 any player in field</option>':'';
-        const unset=!curVal||(!tierPlayers.includes(curVal)&&curVal!=='Wild Card');
+        // For T6, Wild Card option triggers a text input for the actual player name
+        const isWildCard=isLastTier&&curVal!==''&&!tierPlayers.includes(curVal);
+        const wcSelected=isLastTier&&isWildCard;
+        const wcOpt=isLastTier?'<option value="\u1F0CF"'+(wcSelected?' selected':'')+'>\uD83C\uDCCF Wild Card \u2014 type player name...</option>':'';
+        const unset=!curVal||(!tierPlayers.includes(curVal)&&!wcSelected);
+        const wcInput=isLastTier&&wcSelected?
+          '<input class="pi wc-name-in" placeholder="Type player name..." value="'+escH(curVal)+'" oninput="updatePick('+p.id+','+i+',this.value)" style="margin-top:4px">':'';
         picksHtml+='<div><div class="tp-l"><span class="tp-b">T'+(i+1)+'</span>'+lbl+'</div>'+
-          '<select class="pi" style="appearance:none;-webkit-appearance:none;cursor:pointer;'+(unset?'color:var(--mu)':'')+'" onchange="updatePick('+p.id+','+i+',this.value)">'+
-          '<option value="">\u2014 Pick a player \u2014</option>'+opts+wcOpt+'</select></div>';
+          '<select class="pi" style="appearance:none;-webkit-appearance:none;cursor:pointer;'+(unset?'color:var(--mu)':'')+'" onchange="onT6Change('+p.id+','+i+',this.value)">'+
+          '<option value="">\u2014 Pick a player \u2014</option>'+opts+wcOpt+'</select>'+wcInput+'</div>';
       }else{
         // Text input fallback \u2014 no tiers loaded
         const ph=isLastTier?'Player name or Wild Card':'Player name';
@@ -1699,7 +1741,7 @@ function renderTournLb(){
     const projCut=tournLbData.projCut;
     if(showCutRisk&&!cutInserted&&projCut!==null&&p.score!==null&&p.score>projCut){
       cutInserted=true;
-      html+='<div class="tlb-proj-cut"><span><b>Projected Cut: '+fmtS(projCut)+'</b></span><span style="font-size:11px">Top 65 + ties advance</span></div>';
+      html+='<div class="tlb-proj-cut"><span><b>Projected Cut: '+fmtS(projCut)+'</b></span><span style="font-size:11px">Top '+(state.cutSize||65)+' + ties advance</span></div>';
     }
     html+=rowHtml(p);
   });
@@ -1785,7 +1827,7 @@ function applyDark(){
 function resetAll(){
   if(!confirm('Clear all pool data?'))return;
   state={participants:[{id:1,name:'',picks:Array(PICKS).fill(''),tiebreaker:''},{id:2,name:'',picks:Array(PICKS).fill(''),tiebreaker:''}],
-    nextId:3,scores:{},prevScores:{},meta:null,lastRefresh:null,aws:'',tid:'',scoreSource:null,poolHist:{},darkMode:state.darkMode,
+    nextId:3,scores:{},prevScores:{},meta:null,lastRefresh:null,aws:'',tid:'',scoreSource:null,poolHist:{},darkMode:state.darkMode,cutSize:65,
     tiers:Array.from({length:PICKS},(_, ti)=>Array.from({length:ti===PICKS-1?TIER_SIZE:TIER_SIZE},()=>({name:'',odds:''}))),tiersTourn:''};
   shareUrl=null;expandedId=null;
   save();init();
@@ -2038,7 +2080,7 @@ function validatePicks(){
     p.picks.forEach((pk,ti)=>{
       const nm=pk.trim();
       if(!nm)return;
-      if(nm==='Wild Card'&&ti===PICKS-1)return;
+      if(ti===PICKS-1)return; // T6: any name is valid (tier player or wild card)
       const tierPlayers=getTierPlayers(ti).map(n=>n.toLowerCase());
       if(!tierPlayers.includes(nm.toLowerCase()))issues.push(escH(p.name)+': <b>'+escH(nm)+'</b> not in Tier '+(ti+1));
     });
@@ -2204,6 +2246,10 @@ function init(){
   validatePicks();
   renderCopyFormLists();
   // Load GitHub token and share mode
+  // Init cut size display
+  const csEl=document.getElementById('cut-size-in');
+  if(csEl)csEl.value=state.cutSize||65;
+  updateCutSizeDisplay();
   const tokEl=document.getElementById('gh-token-in');
   if(tokEl)tokEl.value=loadToken()||'';
   const savedMode=state.shareMode||'gist';
