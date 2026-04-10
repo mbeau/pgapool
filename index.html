@@ -940,16 +940,33 @@ async function doRefresh(){
     state.meta={tournament:result.tournament,round:result.round,roundNum:result.roundNum,isComplete:result.isComplete,projCut:result.projCut,lastRefresh:refreshTime};
     state.scoreSource='espn';
     if(result.isComplete&&result.actualWinningScore!=null)state.aws=String(result.actualWinningScore);
-    // Pool history
+    // Pool history \u2014 only write when a prior round is complete (not current in-progress round)
+    // This prevents mid-round refreshes from writing misleading partial scores
     const nowR=result.roundNum?'R'+result.roundNum:(result.round==='Final'?'R4':result.round||'R?');
-    state.participants.filter(p=>p.name.trim()).forEach(p=>{
-      const pd=p.picks.map(nm=>{
-        const n=nm.trim();if(!n)return null;
-        const s=matched[n];return s?{score:s.score,cut:['cut','wd','dq'].includes(s.status)}:null;
-      }).filter(Boolean);
-      const ps=calcPool(pd);
-      if(ps!==null){if(!state.poolHist[p.id])state.poolHist[p.id]={};state.poolHist[p.id][nowR]=ps;}
-    });
+    const prevR=result.roundNum&&result.roundNum>1?'R'+(result.roundNum-1):null;
+    // Write completed prior rounds if not already stored
+    if(prevR){
+      state.participants.filter(p=>p.name.trim()).forEach(p=>{
+        if(state.poolHist[p.id]&&state.poolHist[p.id][prevR]!==undefined)return; // already have it
+        const pd=p.picks.map(nm=>{
+          const n=nm.trim();if(!n)return null;
+          const s=matched[n];return s?{score:s.score,cut:['cut','wd','dq'].includes(s.status)}:null;
+        }).filter(Boolean);
+        const ps=calcPool(pd);
+        if(ps!==null){if(!state.poolHist[p.id])state.poolHist[p.id]={};state.poolHist[p.id][prevR]=ps;}
+      });
+    }
+    // Only write current round if tournament is complete
+    if(result.isComplete){
+      state.participants.filter(p=>p.name.trim()).forEach(p=>{
+        const pd=p.picks.map(nm=>{
+          const n=nm.trim();if(!n)return null;
+          const s=matched[n];return s?{score:s.score,cut:['cut','wd','dq'].includes(s.status)}:null;
+        }).filter(Boolean);
+        const ps=calcPool(pd);
+        if(ps!==null){if(!state.poolHist[p.id])state.poolHist[p.id]={};state.poolHist[p.id][nowR]=ps;}
+      });
+    }
     if(notFound.length){
       const b=document.getElementById('un-banner');
       if(b){b.innerHTML='<strong>\u26A0\uFE0F '+notFound.length+' player'+(notFound.length>1?'s':'')+' not found in ESPN data:</strong> '+notFound.join(', ')+' \u2014 check spelling or use Manual entry.';b.style.display='block';}
