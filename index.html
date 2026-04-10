@@ -1781,7 +1781,8 @@ function updateTournBanner(){
   if(selT){
     ban.style.display='flex';noT.style.display='none';
     document.getElementById('tb-name').textContent=selT.name;
-    document.getElementById('tb-date').textContent=selT.date+(state.meta&&state.meta.round?' \u00B7 '+state.meta.round+(state.meta.isComplete?' \u00B7 Final':''):'');
+    const roundDisplay=state.meta&&state.meta.roundNum?'R'+state.meta.roundNum:(state.meta&&state.meta.round&&state.meta.round!=='Final'?state.meta.round:'');
+    document.getElementById('tb-date').textContent=selT.date+(roundDisplay?' \u00B7 '+roundDisplay:'')+(state.meta&&state.meta.isComplete?' \u00B7 Complete':'');
     const sb=document.getElementById('src-badge');
     if(state.scoreSource){
       sb.style.display='';
