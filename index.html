@@ -762,7 +762,7 @@ function loadSaved(){
 // \u2500\u2500 URL HASH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function buildSharePayload(){
   const tierNames=state.tiers.map(t=>t.map(p=>p.name.trim()));
-  return{v:7,aws:state.aws,tid:state.tid,pn:state.poolName||'The Pool',
+  return{v:7,aws:state.aws,tid:state.tid,pn:state.poolName||'The Pool',cutSize:state.cutSize||65,
     ti:tierNames,scores:state.scores||{},meta:state.meta||null,
     hist:state.poolHist||{},
     p:state.participants.filter(p=>p.name.trim()).map(p=>({
@@ -1569,7 +1569,7 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
   // Tiebreak cell
   let tbHtml='<div class="lb-tb'+(isTied&&row.tbD===0?' win':'')+'"></div>';
   if(isTied&&row.tbG!==null){
-    tbHtml='<div class="lb-tb'+(row.tbD===0?' win':'')+'"><span class="tbv">'+fmtS(row.tbG)+'</span>'+(row.tbD!==null?'<span>\u00B1'+row.tbD+'</span>':'')+'</div>';
+    tbHtml='<div class="lb-tb"><span class="tbv">'+fmtS(row.tbG)+'</span></div>';
   }
 
   // Rank icon
@@ -1973,6 +1973,7 @@ function loadFromPayload(payload){
   if(payload.scores&&typeof payload.scores==='object'){state.scores=payload.scores;state.scoreSource='espn';}
   if(payload.meta&&typeof payload.meta==='object'){state.meta=payload.meta;state.lastRefresh=payload.meta.lastRefresh||null;}
   if(payload.hist&&typeof payload.hist==='object'){state.poolHist=payload.hist;}
+  if(payload.cutSize&&payload.cutSize>0){state.cutSize=payload.cutSize;}
 }
 
 // \u2500\u2500 BULK PARTICIPANT IMPORT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
