@@ -1505,11 +1505,7 @@ function renderLb(){
     }
   }
   const tieBan=document.getElementById('tie-ban');
-  if(tiedIds.size>0){
-    if(tieBan)tieBan.style.display='flex';
-    const tv=document.getElementById('tie-val');
-    if(tv)tv.textContent=ws!==null?'Actual: '+fmtS(ws):'';
-  }else if(tieBan)tieBan.style.display='none';
+  if(tieBan)tieBan.style.display='none';
 
   // Prev pool scores for movement
   const prevPool={};
@@ -1608,8 +1604,10 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
 
 function makeExpandedPicks(row,isTied,ws){
   let html='';
-  if(row.eliminated)html+='<div class="el-no">\u1F6AB Eliminated \u2014 '+row.cutCount+' of '+PICKS+' picks missed the cut after Round 2</div>';
-  if(isTied&&row.tbG!==null){
+  if(row.eliminated)html+='<div class="el-no">\uD83D\uDEAB Eliminated \u2014 '+row.cutCount+' of '+PICKS+' picks missed the cut after Round 2</div>';
+  // Only show tiebreaker detail when tournament is complete and there is a real tie
+  const tournComplete=state.meta&&state.meta.isComplete;
+  if(tournComplete&&isTied&&row.tbG!==null){
     html+='<div class="tb-det">\uD83C\uDFAF Tiebreaker \u2014 guess: <strong>'+fmtS(row.tbG)+'</strong>';
     if(ws!==null)html+=' \u00B7 actual: <strong>'+fmtS(ws)+'</strong> \u00B7 off by <strong>'+(row.tbD!==null?row.tbD:'?')+'</strong>';
     html+='</div>';
