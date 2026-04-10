@@ -1606,7 +1606,7 @@ function makeExpandedPicks(row,isTied,ws){
   let html='';
   if(row.eliminated)html+='<div class="el-no">\uD83D\uDEAB Eliminated \u2014 '+row.cutCount+' of '+PICKS+' picks missed the cut after Round 2</div>';
   // Only show tiebreaker detail when tournament is complete and there is a real tie
-  const tournComplete=state.meta&&state.meta.isComplete;
+  const tournComplete=state.meta&&state.meta.isComplete&&state.meta.roundNum>=4;
   if(tournComplete&&isTied&&row.tbG!==null){
     html+='<div class="tb-det">\uD83C\uDFAF Tiebreaker \u2014 guess: <strong>'+fmtS(row.tbG)+'</strong>';
     if(ws!==null)html+=' \u00B7 actual: <strong>'+fmtS(ws)+'</strong> \u00B7 off by <strong>'+(row.tbD!==null?row.tbD:'?')+'</strong>';
