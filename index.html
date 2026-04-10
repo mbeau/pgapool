@@ -941,7 +941,7 @@ async function doRefresh(){
     state.scoreSource='espn';
     if(result.isComplete&&result.actualWinningScore!=null)state.aws=String(result.actualWinningScore);
     // Pool history
-    const nowR=result.round||'R?';
+    const nowR=result.roundNum?'R'+result.roundNum:(result.round==='Final'?'R4':result.round||'R?');
     state.participants.filter(p=>p.name.trim()).forEach(p=>{
       const pd=p.picks.map(nm=>{
         const n=nm.trim();if(!n)return null;
@@ -1525,7 +1525,7 @@ function renderLb(){
 
   const container=document.getElementById('lb-container');
   if(!rows.length){
-    container.innerHTML='<div class="empty"><div class="empty-ic">\u1F3CC\uFE0F</div><div>No participants yet \u2014 go to <strong>Setup</strong> to get started.</div></div>';
+    container.innerHTML='<div class="empty"><div class="empty-ic">\uD83C\uDFCC\uFE0F</div><div>No participants yet \u2014 go to <strong>Setup</strong> to get started.</div></div>';
     return;
   }
   container.innerHTML='';
@@ -1564,7 +1564,7 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
 
   // History
   let histHtml='';
-  const hkeys=['R1','R2','R3','R4','Final'].filter(r=>row.hist[r]!==undefined);
+  const hkeys=['R1','R2','R3','R4'].filter(r=>row.hist[r]!==undefined);
   if(hkeys.length){
     histHtml='<div class="ph"><span class="ph-lb">Pool:</span>'+
       hkeys.map(r=>'<span class="ph-it '+sClass(row.hist[r])+'">'+r+' '+fmtS(row.hist[r])+'</span>').join('')+'</div>';
