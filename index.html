@@ -681,7 +681,7 @@ const SCHEDULE=[
   {id:"valspar-2026",    name:"Valspar Championship",              date:"Mar 19-23, 2026",  espnId:"401703509"},
   {id:"houston-2026",    name:"Texas Children's Houston Open",      date:"Mar 26-29, 2026",  espnId:"401811939"},
   {id:"valero-2026",     name:"Valero Texas Open",                  date:"Apr 2-5, 2026",    espnId:"401811940"},
-  {id:"masters-2026",    name:"Masters Tournament",                 date:"Apr 9-12, 2026",   espnId:"401811941"},
+  {id:"masters-2026",    name:"Masters Tournament",                 date:"Apr 9-12, 2026",   espnId:"401703512"},
   {id:"rbc-2026",        name:"RBC Heritage",                       date:"Apr 16-19, 2026",  espnId:"401703513"},
   {id:"zurich-2026",     name:"Zurich Classic of New Orleans",      date:"Apr 23-26, 2026",  espnId:"401703514"},
   {id:"cadillac-2026",   name:"Cadillac Championship",              date:"Apr 30-May 3, 2026",espnId:"401703515"},
@@ -894,8 +894,8 @@ async function fetchESPN(espnId){
     // During R3+, players with only 2 rounds of data have missed the cut
     let status = 'active';
     if (isComplete) status = 'complete';
-    else if (roundNumTop >= 3 && roundLs.length < 3 && roundLs.length > 0) status = 'cut';
-    else if (roundNumTop >= 3 && roundLs.length === 0) status = 'unknown';
+    else if (roundNum >= 3 && roundLs.length < 3 && roundLs.length > 0) status = 'cut';
+    else if (roundNum >= 3 && roundLs.length === 0) status = 'unknown';
     return{name,score,status,position,thru,today,roundScores};
   });
 
