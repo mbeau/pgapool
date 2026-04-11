@@ -890,7 +890,12 @@ async function fetchESPN(espnId){
     const today=hasStartedCurrentRound&&roundScores.length>0?roundScores[roundScores.length-1]:null;
     const ord=c.order;
     const position=ord!==undefined?(orderCounts[ord]>1?'T'+ord:String(ord)):'';
-    const status=isComplete?'complete':'active';
+    // Status: derive from linescore data
+    // During R3+, players with only 2 rounds of data have missed the cut
+    let status = 'active';
+    if (isComplete) status = 'complete';
+    else if (roundNumTop >= 3 && roundLs.length < 3 && roundLs.length > 0) status = 'cut';
+    else if (roundNumTop >= 3 && roundLs.length === 0) status = 'unknown';
     return{name,score,status,position,thru,today,roundScores};
   });
 
