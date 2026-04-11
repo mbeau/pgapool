@@ -867,6 +867,7 @@ async function fetchESPN(espnId){
   }).length;
   // Only mark players as cut if at least 10 players have started R3 (cut is real, not just early starters)
   const cutHasHappened=roundNum>=3&&playersWithR3>=10;
+  console.log('[CUT DEBUG] roundNum:',roundNum,'playersWithR3:',playersWithR3,'cutHasHappened:',cutHasHappened,'totalPlayers:',allComps.length);
 
   const players=allComps.map(c=>{
     const a=c.athlete||{};
