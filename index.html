@@ -857,15 +857,15 @@ async function fetchESPN(espnId){
   roundNum=roundNum?Number(roundNum):null;
   const round=isComplete?'Final':roundNum?'R'+roundNum:'Pre-tournament';
 
-  // ESPN competitor keys: id, uid, type, order, athlete, score, linescores, statistics
-  // - order: leaderboard rank (ties share same value)
-  // - linescores: [{displayValue:"-6", period:1, linescores:[holes...]}, ...]
+  const allComps=comp&&comp.competitors||[];
+  const orderCounts={};
+  allComps.forEach(c=>{const o=c.order;if(o!==undefined)orderCounts[o]=(orderCounts[o]||0)+1;});
+
   // Count how many players have R3+ data to determine if cut has been made
   const playersWithR3=allComps.filter(c=>{
     const ls=(c.linescores||[]).filter(ls=>ls.period&&(ls.linescores||[]).length>0);
     return ls.some(l=>l.period>=3);
   }).length;
-  // Only mark players as cut if at least 10 players have started R3 (cut is real, not just early starters)
   const cutHasHappened=roundNum>=3&&playersWithR3>=10;
   console.log('[CUT DEBUG] roundNum:',roundNum,'playersWithR3:',playersWithR3,'cutHasHappened:',cutHasHappened,'totalPlayers:',allComps.length);
 
