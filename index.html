@@ -941,6 +941,12 @@ async function doRefresh(){
     });
     state.prevScores=JSON.parse(JSON.stringify(state.scores));
     state.scores=matched;
+    // Debug: show status of first participant's picks
+    const firstP=state.participants.find(p=>p.name.trim());
+    if(firstP){
+      const dbg=firstP.picks.filter(Boolean).map(pk=>`${pk}:${matched[pk]?matched[pk].status:'?'}`);
+      console.log('[STATUS DEBUG]',firstP.name,dbg.join(', '));
+    }
     const now=new Date();
     const h=now.getHours(),m=now.getMinutes(),ampm=h>=12?'PM':'AM';
     const refreshTime=(h%12||12)+':'+(m<10?'0':'')+m+' '+ampm;
