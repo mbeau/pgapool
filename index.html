@@ -894,42 +894,21 @@ async function fetchESPN(espnId){
     const today=hasStartedCurrentRound&&roundScores.length>0?roundScores[roundScores.length-1]:null;
     const ord=c.order;
     const position=ord!==undefined?(orderCounts[ord]>1?'T'+ord:String(ord)):'';
-    // Status: only mark as cut if score is above the cut line
-    // Players who made the cut but haven't started R3 yet also have 2 rounds
-    // We distinguish by score \u2014 missed cut players have higher scores
-    // cutSize is used to estimate cut line from the field
+    // Simple cut detection: during R3+ once 10+ players have R3 data,
+    // anyone still with <3 rounds has missed the cut
     let status='active';
     if(isComplete)status='complete';
-    else if(cutHasHappened&&roundLs.length>0&&roundLs.length<3&&score!==null){
-      // Among players with 2 rounds, find the cut score (top cutN scores)
-      // We'll mark as cut after comparing against cutLine calculated below
-      status='likely_cut'; // temporary \u2014 resolved after all players processed
-    }
+    else if(cutHasHappened&&roundLs.length>0&&roundLs.length<3)status='cut';
     return{name,score,status,position,thru,today,roundScores};
   });
 
-  // Resolve likely_cut status using actual cut line
-  // Players with 2 rounds: those above the cut line missed it, those at/below haven't started R3
-  if(cutHasHappened){
-    const cutN=state&&state.cutSize&&state.cutSize>0?state.cutSize:65;
-    // Get scores of all players who have R3 data (confirmed made cut) + likely_cut players
-    const allWithScores=players.filter(p=>p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
-    // The cut line is the score of the cutN-th player among those with scores
-    const cutLine=allWithScores.length>=cutN?allWithScores[cutN-1]:allWithScores[allWithScores.length-1];
-    players.forEach(p=>{
-      if(p.status==='likely_cut'){
-        p.status=cutLine!==null&&p.score>cutLine?'cut':'active';
-      }
-    });
-  }
-
-  // Determine the actual cut line score during R3+ 
-  // = the worst score among players who made it (have R3 data)
+  // Cut line = worst score among confirmed survivors (for shared link inference)
   let cutLine=null;
   if(cutHasHappened){
-    const madeScores=players.filter(p=>p.status==='active'&&p.roundScores.length>=3&&p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
+    const madeScores=players.filter(p=>p.status==='active'&&p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
     if(madeScores.length>0)cutLine=madeScores[madeScores.length-1];
   }
+
 
   let aws=null;
   if(isComplete){
