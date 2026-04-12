@@ -923,6 +923,14 @@ async function fetchESPN(espnId){
     });
   }
 
+  // Determine the actual cut line score during R3+ 
+  // = the worst score among players who made it (have R3 data)
+  let cutLine=null;
+  if(cutHasHappened){
+    const madeScores=players.filter(p=>p.status==='active'&&p.roundScores.length>=3&&p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
+    if(madeScores.length>0)cutLine=madeScores[madeScores.length-1];
+  }
+
   let aws=null;
   if(isComplete){
     const cs=players.filter(p=>p.score!==null).map(p=>p.score);
@@ -935,7 +943,7 @@ async function fetchESPN(espnId){
     if(active.length>=cutN)projCut=active[cutN-1];
     else if(active.length>0)projCut=active[active.length-1];
   }
-  return{tournament:event.name,round,roundNum,isComplete,actualWinningScore:aws,projCut,players};
+  return{tournament:event.name,round,roundNum,isComplete,actualWinningScore:aws,projCut,cutLine,players};
 }
 
 // \u2500\u2500 REFRESH \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
@@ -966,7 +974,7 @@ async function doRefresh(){
     const h=now.getHours(),m=now.getMinutes(),ampm=h>=12?'PM':'AM';
     const refreshTime=(h%12||12)+':'+(m<10?'0':'')+m+' '+ampm;
     state.lastRefresh=refreshTime;
-    state.meta={tournament:result.tournament,round:result.round,roundNum:result.roundNum,isComplete:result.isComplete,projCut:result.projCut,lastRefresh:refreshTime};
+    state.meta={tournament:result.tournament,round:result.round,roundNum:result.roundNum,isComplete:result.isComplete,projCut:result.projCut,cutLine:result.cutLine,lastRefresh:refreshTime};
     state.scoreSource='espn';
     if(result.isComplete&&result.actualWinningScore!=null)state.aws=String(result.actualWinningScore);
     // Pool history \u2014 only write when a prior round is complete (not current in-progress round)
@@ -1512,10 +1520,17 @@ function buildRows(){
       const nm=name.trim();if(!nm)return null;
       let s=state.scores[nm];
       if(!s){const e=Object.entries(state.scores).find(([k])=>k.toLowerCase()===nm.toLowerCase());if(e)s=e[1];}
+      // Infer cut status during R3+ if not already marked:
+      // a player with only 2 round scores and score above cut line missed the cut
+      let derivedStatus=s&&s.status||'unknown';
+      if(derivedStatus==='active'&&state.meta&&state.meta.roundNum>=3&&s&&s.roundScores&&s.roundScores.length<3&&s.roundScores.length>0&&s.score!==null){
+        const cl=state.meta.cutLine!==undefined&&state.meta.cutLine!==null?state.meta.cutLine:null;
+        if(cl!==null&&s.score>cl)derivedStatus='cut';
+      }
       return{name:nm,score:s&&s.score!==undefined?s.score:null,
-        status:s&&s.status||'unknown',position:s&&s.position||'',thru:s&&s.thru||'',
+        status:derivedStatus,position:s&&s.position||'',thru:s&&s.thru||'',
         today:s&&s.today!==undefined?s.today:null,
-        cut:['cut','wd','dq'].includes(s&&s.status),wd:s&&s.status==='wd',
+        cut:['cut','wd','dq'].includes(derivedStatus),wd:derivedStatus==='wd',
         tierColor:TC[pi]||'#5a6a7e',roundScores:s&&s.roundScores||[]};
     }).filter(Boolean);
     const cutCount=pd.filter(pk=>pk.cut).length;
