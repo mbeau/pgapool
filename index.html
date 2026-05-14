@@ -690,8 +690,8 @@ const SCHEDULE=[
   {id:"zurich-2026",     name:"Zurich Classic of New Orleans",      date:"Apr 23-26, 2026",  espnId:"401703514"},
   {id:"cadillac-2026",   name:"Cadillac Championship",              date:"Apr 30-May 3, 2026",espnId:"401703515"},
   {id:"truist-2026",     name:"Truist Championship",                date:"May 7-10, 2026",   espnId:"401703516"},
-  {id:"myrtle-2026",     name:"ONEflight Myrtle Beach Classic",     date:"May 7-10, 2026",   espnId:"401811947"},
-  {id:"pga-champ-2026",  name:"PGA Championship",                   date:"May 14-17, 2026",  espnId:"401703518"},
+  {id:"myrtle-2026",     name:"ONEflight Myrtle Beach Classic",     date:"May 7-10, 2026",   espnId:"401703517"},
+  {id:"pga-champ-2026",  name:"PGA Championship",                   date:"May 14-17, 2026",  espnId:"401811947"},
   {id:"charles-2026",    name:"Charles Schwab Challenge",           date:"May 28-31, 2026",  espnId:"401703519"},
   {id:"memorial-2026",   name:"Memorial Tournament",                date:"Jun 4-7, 2026",    espnId:"401703520"},
   {id:"usopen-2026",     name:"U.S. Open",                          date:"Jun 18-21, 2026",  espnId:"401703521"},
@@ -1624,14 +1624,13 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
   const scCls='lb-sc '+(row.eliminated?'elim-sc':row.poolScore===null?'pending':sClass(row.poolScore));
   const scTxt=row.eliminated?'ELIM':row.poolScore===null?'\u2014':fmtS(row.poolScore);
   const preview=row.picks.filter(Boolean).slice(0,3).join(', ');
-  const partRiskBadge=participantAtRisk?'<span class="bdg bdg-danger" style="margin-left:8px">CUT RISK</span>':''
   const extra=row.picks.filter(Boolean).length-3;
   const elimTag=row.eliminated?'<span style="color:var(--re);margin-left:6px">ELIMINATED</span>':'';
-  // Participant cut risk: count picks within 2 shots of cut line during R2
+  // Participant cut risk: count picks on or above the cut bubble during R2
   const pcProjectCut=state.meta&&state.meta.projCut!==null&&state.meta.projCut!==undefined?state.meta.projCut:null;
-  // During R2: count picks that are on or above the cut bubble (score >= projCut-1)
   const pcRiskCount=pcProjectCut!==null&&state.meta&&state.meta.roundNum===2?row.pd.filter(pk=>pk.score!==null&&pk.score>=pcProjectCut-1).length:0;
   const participantAtRisk=pcRiskCount>=CUTS_OUT&&!row.eliminated;
+  const partRiskBadge=participantAtRisk?'<span class="bdg bdg-danger" style="margin-left:8px">CUT RISK</span>':'';
 
   el.innerHTML=
     '<div class="lbm">'+
