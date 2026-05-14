@@ -311,6 +311,10 @@ body.light .ar-bar{background:#e8f5e8}
 .tourn-lb-row.danger .tlb-name{color:var(--or)}
 .tourn-lb-row.pick.danger{border-left:3px solid var(--ac);border-right:3px solid var(--or)}
 .tourn-lb-row.pick.danger .tlb-name{color:var(--ac)}
+.tourn-lb-row.cut-row{opacity:0.6}
+.tourn-lb-row.cut-row .tlb-name{color:var(--mu)}
+.tourn-lb-row.cut-row.pick .tlb-name{color:var(--ac);opacity:1}
+.tlb-cut-hdr{padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mu);background:var(--sf);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);margin:6px 0}
 .tlb-proj-cut{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-size:13px;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--or);background:rgba(224,124,48,.07);border-top:2px dashed var(--or);border-bottom:2px dashed var(--or);letter-spacing:.5px}
 .hl-on{background:var(--ac)!important;color:#000!important;border-color:var(--ac)!important}
 
@@ -681,7 +685,7 @@ const SCHEDULE=[
   {id:"valspar-2026",    name:"Valspar Championship",              date:"Mar 19-23, 2026",  espnId:"401703509"},
   {id:"houston-2026",    name:"Texas Children's Houston Open",      date:"Mar 26-29, 2026",  espnId:"401811939"},
   {id:"valero-2026",     name:"Valero Texas Open",                  date:"Apr 2-5, 2026",    espnId:"401811940"},
-  {id:"masters-2026",    name:"Masters Tournament",                 date:"Apr 9-12, 2026",   espnId:"401811941"},
+  {id:"masters-2026",    name:"Masters Tournament",                 date:"Apr 9-12, 2026",   espnId:"401703512"},
   {id:"rbc-2026",        name:"RBC Heritage",                       date:"Apr 16-19, 2026",  espnId:"401703513"},
   {id:"zurich-2026",     name:"Zurich Classic of New Orleans",      date:"Apr 23-26, 2026",  espnId:"401703514"},
   {id:"cadillac-2026",   name:"Cadillac Championship",              date:"Apr 30-May 3, 2026",espnId:"401703515"},
@@ -866,7 +870,10 @@ async function fetchESPN(espnId){
     const ls=(c.linescores||[]).filter(ls=>ls.period&&(ls.linescores||[]).length>0);
     return ls.some(l=>l.period>=3);
   }).length;
-  const cutHasHappened=roundNum>=3&&playersWithR3>=10;
+  // Cut has happened if: R3+ with 10+ players started, OR R2 is complete
+  const r2Complete=roundNum===2&&isComplete;
+  const r3Started=roundNum>=3&&playersWithR3>=5; // lower threshold \u2014 5 players in R3+ is enough
+  const cutHasHappened=r3Started||r2Complete;
 
   const players=allComps.map(c=>{
     const a=c.athlete||{};
@@ -1617,8 +1624,14 @@ function makeRow(row,rank,tiedIds,prevPool,ws){
   const scCls='lb-sc '+(row.eliminated?'elim-sc':row.poolScore===null?'pending':sClass(row.poolScore));
   const scTxt=row.eliminated?'ELIM':row.poolScore===null?'\u2014':fmtS(row.poolScore);
   const preview=row.picks.filter(Boolean).slice(0,3).join(', ');
+  const partRiskBadge=participantAtRisk?'<span class="bdg bdg-danger" style="margin-left:8px">CUT RISK</span>':''
   const extra=row.picks.filter(Boolean).length-3;
   const elimTag=row.eliminated?'<span style="color:var(--re);margin-left:6px">ELIMINATED</span>':'';
+  // Participant cut risk: count picks within 2 shots of cut line during R2
+  const pcProjectCut=state.meta&&state.meta.projCut!==null&&state.meta.projCut!==undefined?state.meta.projCut:null;
+  // During R2: count picks that are on or above the cut bubble (score >= projCut-1)
+  const pcRiskCount=pcProjectCut!==null&&state.meta&&state.meta.roundNum===2?row.pd.filter(pk=>pk.score!==null&&pk.score>=pcProjectCut-1).length:0;
+  const participantAtRisk=pcRiskCount>=CUTS_OUT&&!row.eliminated;
 
   el.innerHTML=
     '<div class="lbm">'+
@@ -1739,7 +1752,7 @@ function renderTournLb(){
   if(hlBtn)hlBtn.style.display='';
   const crBtn=document.getElementById('cut-risk-btn');
   if(crBtn){
-    const isR2=(tournLbData.roundNum===2)||(tournLbData.projCut!==null)||(state.meta&&state.meta.roundNum===2);
+    const isR2=(tournLbData.roundNum>=2)||(state.meta&&state.meta.roundNum>=2);
     crBtn.style.display=isR2?'':'none';
     crBtn.textContent=showCutRisk?'Cut Risk: On':'Cut Risk: Off';
     crBtn.classList.toggle('hl-on',showCutRisk);
@@ -1759,13 +1772,13 @@ function renderTournLb(){
   // Header
   html+='<div class="tourn-lb-hdr"><span class="tlb-pos">Pos</span><span class="tlb-name">Player</span><span class="tlb-score" style="font-size:11px;font-weight:700">Total</span><span class="tlb-today" style="font-size:11px;font-weight:700">Today</span><span class="tlb-thru" style="font-size:11px;font-weight:700">Thru</span></div>';
 
-  function rowHtml(p){
+  function rowHtml(p,isCutRow){
     const todayScore=p.today!==undefined?p.today:(p.roundScores&&p.roundScores.length?p.roundScores[p.roundScores.length-1]:null);
-    const thruTxt=p.thru&&p.thru!==''?p.thru:(p.status==='cut'?'CUT':p.status==='wd'?'WD':p.status==='dq'?'DQ':'-');
+    const thruTxt=isCutRow?(p.status==='wd'?'WD':p.status==='dq'?'DQ':'CUT'):(p.thru&&p.thru!==''?p.thru:'-');
     const isPick=highlightOn&&pickNames.has(p.name.toLowerCase());
     const projCut=tournLbData.projCut;
-    const isDanger=showCutRisk&&projCut!==null&&p.score!==null&&p.score>projCut-2&&p.score<=projCut+1;
-    return '<div class="tourn-lb-row'+(isPick?' pick':'')+(isDanger?' danger':'')+'">'+
+    const isDanger=!isCutRow&&showCutRisk&&projCut!==null&&p.score!==null&&p.score>projCut-2&&p.score<=projCut+1;
+    return '<div class="tourn-lb-row'+(isCutRow?' cut-row':'')+(isPick?' pick':'')+(isDanger?' danger':'')+'">'+
       '<div class="tlb-pos">'+escH(p.position||'-')+'</div>'+
       '<div class="tlb-name">'+escH(p.name)+'</div>'+
       '<div class="tlb-score '+sClass(p.score)+'">'+fmtS(p.score)+'</div>'+
@@ -1775,7 +1788,10 @@ function renderTournLb(){
   }
 
   let cutInserted=false;
-  active.forEach(p=>{
+  // After R2, separate cut players into their own section in tournament tab
+  const cutPlayers=tournLbData.players.filter(p=>p.status==='cut'||p.status==='wd'||p.status==='dq');
+  const activePlayers=active; // already filtered to non-cut
+  activePlayers.forEach(p=>{
     const projCut=tournLbData.projCut;
     if(showCutRisk&&!cutInserted&&projCut!==null&&p.score!==null&&p.score>projCut){
       cutInserted=true;
@@ -1785,6 +1801,11 @@ function renderTournLb(){
   });
   if(showCutRisk&&!cutInserted&&tournLbData.projCut!==null){
     html+='<div class="tlb-proj-cut"><span><b>Projected Cut: '+fmtS(tournLbData.projCut)+'</b></span><span style="font-size:11px">All active players make cut</span></div>';
+  }
+  // Show cut/WD/DQ players after the active list (R2+ only)
+  if(cutPlayers.length>0&&(tournLbData.roundNum>=2||showCutRisk)){
+    html+='<div class="tlb-cut-hdr">Missed Cut / WD</div>';
+    cutPlayers.sort((a,b)=>(a.score||999)-(b.score||999)).forEach(p=>{html+=rowHtml(p,true);});
   }
 
   if(cut.length){
