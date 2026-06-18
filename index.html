@@ -691,10 +691,10 @@ const SCHEDULE=[
   {id:"cadillac-2026",   name:"Cadillac Championship",              date:"Apr 30-May 3, 2026",espnId:"401703515"},
   {id:"truist-2026",     name:"Truist Championship",                date:"May 7-10, 2026",   espnId:"401703516"},
   {id:"myrtle-2026",     name:"ONEflight Myrtle Beach Classic",     date:"May 7-10, 2026",   espnId:"401703517"},
-  {id:"pga-champ-2026",  name:"PGA Championship",                   date:"May 14-17, 2026",  espnId:"401811947"},
+  {id:"pga-champ-2026",  name:"PGA Championship",                   date:"May 14-17, 2026",  espnId:"401703518"},
   {id:"charles-2026",    name:"Charles Schwab Challenge",           date:"May 28-31, 2026",  espnId:"401703519"},
   {id:"memorial-2026",   name:"Memorial Tournament",                date:"Jun 4-7, 2026",    espnId:"401703520"},
-  {id:"usopen-2026",     name:"U.S. Open",                          date:"Jun 18-21, 2026",  espnId:"401703521"},
+  {id:"usopen-2026",     name:"U.S. Open",                          date:"Jun 18-21, 2026",  espnId:"401811952"},
   {id:"travelers-2026",  name:"Travelers Championship",             date:"Jun 25-28, 2026",  espnId:"401703522"},
   {id:"genesis-scot-26", name:"Genesis Scottish Open",              date:"Jul 9-12, 2026",   espnId:"401703523"},
   {id:"open-2026",       name:"The Open Championship",              date:"Jul 16-19, 2026",  espnId:"401703524"},
@@ -872,8 +872,15 @@ async function fetchESPN(espnId){
   }).length;
   // Cut has happened if: R3+ with 10+ players started, OR R2 is complete
   const r2Complete=roundNum===2&&isComplete;
-  const r3Started=roundNum>=3&&playersWithR3>=5; // lower threshold \u2014 5 players in R3+ is enough
-  const cutHasHappened=r3Started||r2Complete;
+  // Also detect R2 complete by hole count \u2014 most players finished 18 holes in R2
+  const playersFinishedR2=allComps.filter(c=>{
+    const ls=(c.linescores||[]).filter(l=>l.period&&(l.linescores||[]).length>0);
+    const r2=ls.find(l=>l.period===2);
+    return r2&&(r2.linescores||[]).length>=18;
+  }).length;
+  const r2EffectivelyComplete=roundNum===2&&playersFinishedR2>=30;
+  const r3Started=roundNum>=3&&playersWithR3>=5;
+  const cutHasHappened=r3Started||r2Complete||r2EffectivelyComplete;
 
   const players=allComps.map(c=>{
     const a=c.athlete||{};
@@ -1805,15 +1812,6 @@ function renderTournLb(){
   if(cutPlayers.length>0&&(tournLbData.roundNum>=2||showCutRisk)){
     html+='<div class="tlb-cut-hdr">Missed Cut / WD</div>';
     cutPlayers.sort((a,b)=>(a.score||999)-(b.score||999)).forEach(p=>{html+=rowHtml(p,true);});
-  }
-
-  if(cut.length){
-    html+='<div class="tlb-cut" style="color:var(--re)">\u2702\uFE0F Missed Cut \u2014 '+cut.length+' players</div>';
-    cut.forEach(p=>{ html+=rowHtml(p); });
-  }
-  if(wd.length){
-    html+='<div class="tlb-cut" style="color:var(--or)">WD / DQ \u2014 '+wd.length+' players</div>';
-    wd.forEach(p=>{ html+=rowHtml(p); });
   }
   html+='</div></div>';
   container.innerHTML=html;
