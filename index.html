@@ -878,7 +878,7 @@ async function fetchESPN(espnId){
     const r2=ls.find(l=>l.period===2);
     return r2&&(r2.linescores||[]).length>=18;
   }).length;
-  const r2EffectivelyComplete=roundNum===2&&playersFinishedR2>=30;
+  const r2EffectivelyComplete=roundNum===2&&allComps.length>0&&playersFinishedR2>=Math.floor(allComps.length*0.75);
   const r3Started=roundNum>=3&&playersWithR3>=5;
   const cutHasHappened=r3Started||r2Complete||r2EffectivelyComplete;
 
