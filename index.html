@@ -1516,6 +1516,9 @@ function buildRows(){
       // Infer cut status during R3+ if not already marked:
       // a player with only 2 round scores and score above cut line missed the cut
       let derivedStatus=s&&s.status||'unknown';
+      // During R2, nobody has been cut yet \u2014 clear any stale cut statuses from bad prior refresh
+      if(derivedStatus==='cut'&&state.meta&&state.meta.roundNum===2)derivedStatus='active';
+      // During R3+, infer cut from cutLine if status not already set
       if(derivedStatus==='active'&&state.meta&&state.meta.roundNum>=3&&s&&s.roundScores&&s.roundScores.length<3&&s.roundScores.length>0&&s.score!==null){
         const cl=state.meta.cutLine!==undefined&&state.meta.cutLine!==null?state.meta.cutLine:null;
         if(cl!==null&&s.score>cl)derivedStatus='cut';
