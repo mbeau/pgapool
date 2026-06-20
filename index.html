@@ -865,40 +865,27 @@ async function fetchESPN(espnId){
   const orderCounts={};
   allComps.forEach(c=>{const o=c.order;if(o!==undefined)orderCounts[o]=(orderCounts[o]||0)+1;});
 
-  // Count how many players have R3+ data to determine if cut has been made
-  const playersWithR3=allComps.filter(c=>{
-    const ls=(c.linescores||[]).filter(ls=>ls.period&&(ls.linescores||[]).length>0);
-    return ls.some(l=>l.period>=3);
-  }).length;
-  // Cut has happened if: R3+ with 10+ players started, OR R2 is complete
-  const r2Complete=roundNum===2&&isComplete;
-  // Also detect R2 complete by hole count \u2014 most players finished 18 holes in R2
-  const playersFinishedR2=allComps.filter(c=>{
-    const ls=(c.linescores||[]).filter(l=>l.period&&(l.linescores||[]).length>0);
-    const r2=ls.find(l=>l.period===2);
-    return r2&&(r2.linescores||[]).length>=18;
-  }).length;
-  const r2EffectivelyComplete=roundNum===2&&allComps.length>0&&playersFinishedR2>=Math.floor(allComps.length*0.75);
-  const r3Started=roundNum>=3&&playersWithR3>=5;
-  const cutHasHappened=r3Started||r2Complete||r2EffectivelyComplete;
+  const cutN=state&&state.cutSize&&state.cutSize>0?state.cutSize:65;
 
+  // First pass: build player data and identify who has completed 2 rounds
   const players=allComps.map(c=>{
     const a=c.athlete||{};
     const name=a.displayName||a.fullName||'';
     const score=parseScore(c.score);
-    // Filter to rounds that have actually started (at least 1 hole played)
-    // ESPN adds empty placeholder entries for future rounds with 0 holes
     const roundLs=(c.linescores||[]).filter(ls=>
-      ls.period&&
-      ls.displayValue!==undefined&&
-      ls.displayValue!==''&&
-      (ls.linescores||[]).length>0
+      ls.period&&ls.displayValue!==undefined&&ls.displayValue!==''&&(ls.linescores||[]).length>0
     );
     const roundScores=roundLs.map(ls=>parseScore(ls.displayValue));
-    // today = score for the CURRENT round only (not a prior finished round)
-    // If the player's most recent round period < current roundNum, they haven't started today
+    const r1=roundLs.find(l=>l.period===1);
+    const r2=roundLs.find(l=>l.period===2);
+    const r3=roundLs.find(l=>l.period>=3);
+    const finishedR1=r1&&(r1.linescores||[]).length>=18;
+    const finishedR2=r2&&(r2.linescores||[]).length>=18;
+    const ord=c.order;
+    const position=ord!==undefined?(orderCounts[ord]>1?'T'+ord:String(ord)):'';
+    // Determine current round for thru/today
     const lastRoundPeriod=roundLs.length>0?roundLs[roundLs.length-1].period:0;
-    const hasStartedCurrentRound=lastRoundPeriod>=roundNum;
+    const hasStartedCurrentRound=roundNum?lastRoundPeriod>=roundNum:false;
     let thru='';
     const lastRound=roundLs[roundLs.length-1];
     if(lastRound&&hasStartedCurrentRound){
@@ -906,26 +893,42 @@ async function fetchESPN(espnId){
       thru=holes.length>=18?'F':(holes.length>0?String(holes.length):'');
     }
     const today=hasStartedCurrentRound&&roundScores.length>0?roundScores[roundScores.length-1]:null;
-    const ord=c.order;
-    const position=ord!==undefined?(orderCounts[ord]>1?'T'+ord:String(ord)):'';
-    // Simple cut detection: during R3+ once 10+ players have R3 data,
-    // anyone still with <3 rounds has missed the cut
-    let status='active';
-    if(isComplete)status='complete';
-    else if(cutHasHappened){
-      // Cut players have R1+R2 data but no R3 \u2014 check by period number
-      const hasPeriod3=roundLs.some(ls=>ls.period>=3);
-      if(!hasPeriod3&&roundLs.length>0)status='cut';
-    }
-    return{name,score,status,position,thru,today,roundScores};
+    return{name,score,status:'active',position,thru,today,roundScores,finishedR1,finishedR2,hasR3:!!r3};
   });
 
-  // Cut line = worst score among confirmed survivors (for shared link inference)
+  // How many players have finished both rounds?
+  const doneR2=players.filter(p=>p.finishedR1&&p.finishedR2).length;
+  // Cut has happened once 75%+ of field has finished R2 (or R3 has started)
+  const r3Started=players.some(p=>p.hasR3);
+  const cutHasHappened=r3Started||(doneR2>=Math.floor(allComps.length*0.95));
+
+  if(cutHasHappened){
+    // Sort all players with 2 complete rounds by score to find the cut line
+    const twoRoundScores=players
+      .filter(p=>p.finishedR1&&p.finishedR2&&p.score!==null)
+      .map(p=>p.score).sort((a,b)=>a-b);
+    const cutLine70=twoRoundScores.length>=cutN?twoRoundScores[cutN-1]:null;
+    // Mark cut: finished R2 but no R3 data, and score above cut line
+    players.forEach(p=>{
+      if(isComplete){p.status='complete';return;}
+      if(p.hasR3)return; // made the cut, playing R3
+      if(p.finishedR1&&p.finishedR2&&cutLine70!==null&&p.score>cutLine70)p.status='cut';
+      else if(p.finishedR1&&p.finishedR2&&cutLine70!==null&&p.score<=cutLine70){/* made cut, waiting */}
+    });
+  }
+
+  // Cut line = worst score among players who made it
   let cutLine=null;
   if(cutHasHappened){
-    const madeScores=players.filter(p=>p.status==='active'&&p.score!==null).map(p=>p.score).sort((a,b)=>a-b);
+    const madeScores=players.filter(p=>p.status==='active'&&p.score!==null&&p.finishedR2).map(p=>p.score).sort((a,b)=>a-b);
     if(madeScores.length>0)cutLine=madeScores[madeScores.length-1];
   }
+
+  const cutPlayers=players.filter(p=>p.status==='cut');
+  const activePlayers=players.filter(p=>p.status==='active');
+  console.log('[Golf Pool] roundNum='+roundNum+' isComplete='+isComplete+' cutHasHappened='+cutHasHappened+' doneR2='+doneR2+'/'+allComps.length+' r3Started='+r3Started);
+  console.log('[Golf Pool] Active:'+activePlayers.length+' Cut:'+cutPlayers.length);
+  if(cutPlayers.length>0)console.log('[Golf Pool] Cut examples:',cutPlayers.slice(0,3).map(p=>p.name+' '+p.score));
 
 
   let aws=null;
@@ -1519,6 +1522,7 @@ function buildRows(){
       if(!s){const e=Object.entries(state.scores).find(([k])=>k.toLowerCase()===nm.toLowerCase());if(e)s=e[1];}
       // Infer cut status during R3+ if not already marked:
       // a player with only 2 round scores and score above cut line missed the cut
+      console.log('[Golf Pool] buildRows pick:',nm,'gist status:',s&&s.status,'meta:',state.meta&&state.meta.roundNum,state.meta&&state.meta.isComplete,'cutLine:',state.meta&&state.meta.cutLine);
       let derivedStatus=s&&s.status||'unknown';
       // During R2, nobody has been cut yet \u2014 clear any stale cut statuses from bad prior refresh
       if(derivedStatus==='cut'&&state.meta&&state.meta.roundNum===2&&!state.meta.isComplete)derivedStatus='active';
