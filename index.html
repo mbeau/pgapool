@@ -912,7 +912,11 @@ async function fetchESPN(espnId){
     // anyone still with <3 rounds has missed the cut
     let status='active';
     if(isComplete)status='complete';
-    else if(cutHasHappened&&roundLs.length>0&&roundLs.length<3)status='cut';
+    else if(cutHasHappened){
+      // Cut players have R1+R2 data but no R3 \u2014 check by period number
+      const hasPeriod3=roundLs.some(ls=>ls.period>=3);
+      if(!hasPeriod3&&roundLs.length>0)status='cut';
+    }
     return{name,score,status,position,thru,today,roundScores};
   });
 
