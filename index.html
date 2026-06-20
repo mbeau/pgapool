@@ -893,7 +893,7 @@ async function fetchESPN(espnId){
       thru=holes.length>=18?'F':(holes.length>0?String(holes.length):'');
     }
     const today=hasStartedCurrentRound&&roundScores.length>0?roundScores[roundScores.length-1]:null;
-    return{name,score,status:'active',position,thru,today,roundScores,finishedR1,finishedR2,hasR3:!!r3};
+    return{name,score,status:'active',position,thru,today,roundScores,finishedR1,finishedR2,hasR3:!!r3,startedR1:!!(r1&&(r1.linescores||[]).length>0),startedR2:!!(r2&&(r2.linescores||[]).length>0)};
   });
 
   // How many players have finished both rounds?
@@ -915,6 +915,10 @@ async function fetchESPN(espnId){
       else if(isComplete&&p.finishedR1&&p.finishedR2)p.status='complete'; // made cut, tournament done
     });
   }
+  // WD: started but didn't finish R2 and no R3 \u2014 regardless of when cut happened
+  players.forEach(p=>{
+    if(p.status==='active'&&(p.startedR1||p.startedR2)&&!p.finishedR2&&!p.hasR3)p.status='wd';
+  });
 
   // Cut line = worst score among players who made it
   let cutLine=null;
