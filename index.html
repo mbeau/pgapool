@@ -1517,7 +1517,7 @@ function buildRows(){
       // a player with only 2 round scores and score above cut line missed the cut
       let derivedStatus=s&&s.status||'unknown';
       // During R2, nobody has been cut yet \u2014 clear any stale cut statuses from bad prior refresh
-      if(derivedStatus==='cut'&&state.meta&&state.meta.roundNum===2)derivedStatus='active';
+      if(derivedStatus==='cut'&&state.meta&&state.meta.roundNum===2&&!state.meta.isComplete)derivedStatus='active';
       // During R3+, infer cut from cutLine if status not already set
       if(derivedStatus==='active'&&state.meta&&state.meta.roundNum>=3&&s&&s.roundScores&&s.roundScores.length<3&&s.roundScores.length>0&&s.score!==null){
         const cl=state.meta.cutLine!==undefined&&state.meta.cutLine!==null?state.meta.cutLine:null;
@@ -1730,6 +1730,7 @@ async function refreshTournLb(){
   btn.innerHTML='<span class="spin">\u27F3</span> Fetching\u2026';btn.disabled=true;
   try{
     const result=await fetchESPN(selT.espnId);
+    result.fetchedAt=Date.now();
     tournLbData=result;
     renderTournLb();
     checkTierFieldValidation(null,null);
@@ -1869,7 +1870,10 @@ function showTab(t){
   document.getElementById('panel-'+t).classList.add('on');
   if(t==='lb')renderLb();
   if(t==='tiers')renderTierView();
-  if(t==='tourn'){if(tournLbData)renderTournLb();else refreshTournLb();}
+  if(t==='tourn'){
+    const stale=!tournLbData||!tournLbData.fetchedAt||(Date.now()-tournLbData.fetchedAt>15*60*1000);
+    if(stale)refreshTournLb();else renderTournLb();
+  }
 }
 
 function openModal(){document.getElementById('modal').classList.add('on');}
@@ -2306,6 +2310,8 @@ function init(){
   renderTierView();
   validatePicks();
   renderCopyFormLists();
+  // Auto-fetch tournament tab on load if a tournament is selected
+  if(state.tid){setTimeout(()=>refreshTournLb(),800);}
   // Load GitHub token and share mode
   // Init cut size display
   const csEl=document.getElementById('cut-size-in');
