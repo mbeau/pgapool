@@ -910,10 +910,9 @@ async function fetchESPN(espnId){
     const cutLine70=twoRoundScores.length>=cutN?twoRoundScores[cutN-1]:null;
     // Mark cut: finished R2 but no R3 data, and score above cut line
     players.forEach(p=>{
-      if(isComplete){p.status='complete';return;}
-      if(p.hasR3)return; // made the cut, playing R3
+      if(p.hasR3){if(isComplete)p.status='complete';return;} // made cut
       if(p.finishedR1&&p.finishedR2&&cutLine70!==null&&p.score>cutLine70)p.status='cut';
-      else if(p.finishedR1&&p.finishedR2&&cutLine70!==null&&p.score<=cutLine70){/* made cut, waiting */}
+      else if(isComplete&&p.finishedR1&&p.finishedR2)p.status='complete'; // made cut, tournament done
     });
   }
 
