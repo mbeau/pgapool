@@ -904,10 +904,17 @@ async function fetchESPN(espnId){
 
   if(cutHasHappened){
     // Sort all players with 2 complete rounds by score to find the cut line
-    const twoRoundScores=players
-      .filter(p=>p.finishedR1&&p.finishedR2&&p.score!==null)
-      .map(p=>p.score).sort((a,b)=>a-b);
-    const cutLine70=twoRoundScores.length>=cutN?twoRoundScores[cutN-1]:null;
+    let cutLine70=null;
+    // Use the stored cut line from meta if already set \u2014 it's locked in at end of R2
+    if(state&&state.meta&&state.meta.cutLine!=null){
+      cutLine70=state.meta.cutLine;
+    }else{
+      // First time: rank all 2-round finishers by score
+      const twoRoundScores=players
+        .filter(p=>p.finishedR1&&p.finishedR2&&p.score!==null)
+        .map(p=>p.score).sort((a,b)=>a-b);
+      cutLine70=twoRoundScores.length>=cutN?twoRoundScores[cutN-1]:null;
+    }
     // Mark cut: finished R2 but no R3 data, and score above cut line
     players.forEach(p=>{
       if(p.hasR3){if(isComplete)p.status='complete';return;} // made cut
